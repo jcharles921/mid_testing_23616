@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f5f5f5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+      }
+      .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+      }
+      .card {
+        width: 300px;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        border-top: 4px solid #77ba99;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      input {
+        padding: 10px;
+        border: none;
+        background-color: transparent;
+        border-bottom: 1px solid #ccc;
+        color: #333;
+      }
+
+      /* Custom Select Styling */
+      .select-wrapper {
+        position: relative;
+        width: 100%;
+      }
+
+      select {
+        width: 100%;
+        padding: 10px 30px 10px 10px;
+        border: none;
+        border-bottom: 1px solid #ccc;
+        background-color: transparent;
+        cursor: pointer;
+        color: #333;
+        font-size: 1em;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+        transition: all 0.3s ease;
+        /* Firefox-specific padding fix */
+        -moz-padding-start: 10px;
+        /* Firefox-specific opacity fix */
+        -moz-opacity: 1;
+      }
+
+      /* Remove Firefox focus outline */
+      select:-moz-focusring {
+        color: transparent;
+        text-shadow: 0 0 0 #333;
+      }
+
+      /* Remove Firefox dotted outline */
+      select::-moz-focus-inner {
+        border: 0;
+      }
+
+      /* Hide default Firefox arrow */
+      @-moz-document url-prefix() {
+        select {
+          text-indent: 0.01px;
+          text-overflow: "";
+        }
+      }
+
+      .select-wrapper::after {
+        content: "";
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid #77ba99;
+        pointer-events: none;
+        transition: transform 0.3s ease;
+        /* Ensure the arrow shows up in Firefox */
+        z-index: 1;
+      }
+
+      .select-wrapper:hover::after {
+        transform: translateY(-50%) scale(1.2);
+      }
+
+      select:focus {
+        outline: none;
+        border-bottom: 2px solid #77ba99;
+      }
+
+      select:hover {
+        background-color: #f8f8f8;
+      }
+
+      /* Style the options - Firefox specific */
+      @-moz-document url-prefix() {
+        select option {
+          background-color: white;
+          color: #333;
+          padding: 10px;
+        }
+
+        select option:hover,
+        select option:focus {
+          background-color: #77ba99 !important;
+          color: white !important;
+          box-shadow: 0 0 10px 100px #77ba99 inset;
+        }
+      }
+
+      /* Disabled state */
+      select:disabled {
+        color: #999;
+        border-bottom: 1px dashed #ccc;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      .select-wrapper:has(select:disabled)::after {
+        border-top-color: #ccc;
+        opacity: 0.7;
+      }
+
+      /* Error state */
+      select.error {
+        border-bottom: 1px solid #ff6b6b;
+      }
+
+      .select-wrapper:has(select.error)::after {
+        border-top-color: #ff6b6b;
+      }
+
+      .buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .login-button {
+        padding: 10px 20px;
+        background-color: #77ba99;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .error-message {
+        color: red;
+        font-size: 12px;
+        margin-top: 5px;
+      }
+      @media (max-width: 480px) {
+        .card {
+          width: 100%;
+          max-width: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <form id="signupForm" method="post" action="register">
+          <input
+            type="text"
+            id="username"
+            name="userName"
+            placeholder="Enter username"
+            required
+          />
+          <div id="usernameError" class="error-message"></div>
+
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Enter email"
+            required
+          />
+          <div id="emailError" class="error-message"></div>
+
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Enter password"
+            required
+          />
+          <div id="passwordError" class="error-message"></div>
+
+          <input
+            type="password"
+            id="confirmPassword"
+            name="confirmPassword"
+            placeholder="Confirm password"
+            required
+          />
+          <div id="confirmPasswordError" class="error-message"></div>
+
+          <!-- Province Selection -->
+          <div class="select-wrapper">
+            <select
+              id="province"
+              name="province"
+              onchange="fetchDistricts()"
+              required
+            >
+              <option value="" disabled selected>Select Province</option>
+            </select>
+          </div>
+
+          <!-- District Selection -->
+          <div class="select-wrapper">
+            <select
+              id="district"
+              name="district"
+              onchange="fetchSectors()"
+              required
+            >
+              <option value="" disabled selected>Select District</option>
+            </select>
+          </div>
+
+          <!-- Sector Selection -->
+          <div class="select-wrapper">
+            <select id="sector" name="sector" onchange="fetchCells()" required>
+              <option value="" disabled selected>Select Sector</option>
+            </select>
+          </div>
+
+          <!-- Cell Selection -->
+          <div class="select-wrapper">
+            <select id="cell" name="cell" onchange="fetchVillages()" required>
+              <option value="" disabled selected>Select Cell</option>
+            </select>
+          </div>
+
+          <!-- Village Selection -->
+          <div class="select-wrapper">
+            <select id="village" name="village" required>
+              <option value="" disabled selected>Select Village</option>
+            </select>
+          </div>
+
+          <div class="buttons">
+            <button type="submit" class="login-button">Register</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      const API_URL = "https://rwanda.p.rapidapi.com";
+      const API_HEADERS = {
+        "x-rapidapi-key": "2199840b10msh703983e3fedcdb6p1d3842jsn70a2ff40d543",
+        "x-rapidapi-host": "rwanda.p.rapidapi.com",
+      };
+
+      document.addEventListener("DOMContentLoaded", fetchProvinces);
+
+      async function fetchProvinces() {
+        try {
+          const response = await fetch(`${API_URL}/provinces`, {
+            headers: API_HEADERS,
+          });
+          const data = await response.json();
+          console.log(data);
+          populateDropdown("province", data?.data);
+        } catch (error) {
+          console.error("Error fetching provinces:", error);
+        }
+      }
+
+      async function fetchDistricts() {
+        const province = document.getElementById("province").value;
+        try {
+          const response = await fetch(`${API_URL}/districts?p=${province}`, {
+            headers: API_HEADERS,
+          });
+          const data = await response.json();
+          populateDropdown("district", data?.data);
+        } catch (error) {
+          console.error("Error fetching districts:", error);
+        }
+      }
+
+      async function fetchSectors() {
+        const province = document.getElementById("province").value;
+        const district = document.getElementById("district").value;
+        try {
+          const response = await fetch(
+            `${API_URL}/sectors?p=${province}&d=${district}`,
+            { headers: API_HEADERS }
+          );
+          const data = await response.json();
+          populateDropdown("sector", data.data);
+        } catch (error) {
+          console.error("Error fetching sectors:", error);
+        }
+      }
+
+      async function fetchCells() {
+        const province = document.getElementById("province").value;
+        const district = document.getElementById("district").value;
+        const sector = document.getElementById("sector").value;
+        try {
+          const response = await fetch(
+            `${API_URL}/cells?p=${province}&d=${district}&s=${sector}`,
+            { headers: API_HEADERS }
+          );
+          const data = await response.json();
+          populateDropdown("cell", data?.data);
+        } catch (error) {
+          console.error("Error fetching cells:", error);
+        }
+      }
+
+      async function fetchVillages() {
+        const province = document.getElementById("province").value;
+        const district = document.getElementById("district").value;
+        const sector = document.getElementById("sector").value;
+        const cell = document.getElementById("cell").value;
+        try {
+          const response = await fetch(
+            `${API_URL}/villages?p=${province}&d=${district}&s=${sector}&c=${cell}`,
+            { headers: API_HEADERS }
+          );
+          const data = await response.json();
+          populateDropdown("village", data?.data);
+        } catch (error) {
+          console.error("Error fetching villages:", error);
+        }
+      }
+
+      function populateDropdown(id, items) {
+        const dropdown = document.getElementById(id);
+        dropdown.innerHTML = '<option value="">Select</option>'; // Reset options
+        items.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = item.toLowerCase();
+          option.textContent = item;
+          dropdown.appendChild(option);
+        });
+      }
+    </script>
+  </body>
+</html>
