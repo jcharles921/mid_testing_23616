@@ -1,5 +1,6 @@
 package utils;
 
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import dev.morphia.Datastore;
@@ -7,10 +8,12 @@ import dev.morphia.Morphia;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import model.Location;
+import org.bson.UuidRepresentation;
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class MongoDBConfig {
@@ -20,18 +23,17 @@ public class MongoDBConfig {
 
 	static {
 		try {
-			MongoClient mongoClient = MongoClients.create(CONNECTION_STRING);
+			MongoClientSettings settings = MongoClientSettings.builder().uuidRepresentation(UuidRepresentation.STANDARD)
+					.applyConnectionString(new com.mongodb.ConnectionString(CONNECTION_STRING)).build();
+
+			MongoClient mongoClient = MongoClients.create(settings);
 			datastore = Morphia.createDatastore(mongoClient, DATABASE_NAME);
-
-// Map the model package where your entities are located
 			datastore.getMapper().mapPackage("model");
-
-// Ensure indexes after mapping
 			datastore.ensureIndexes();
-
 			System.out.println("MongoDB connection established successfully");
 		} catch (Exception e) {
-			System.err.println("Error connecting to MongoDB: " + e.getMessage());
+			System.out.println("Error connecting to MongoDB: " + e.getMessage());
+			e.printStackTrace();
 			throw new RuntimeException("Could not connect to MongoDB", e);
 		}
 	}
@@ -40,64 +42,157 @@ public class MongoDBConfig {
 		return datastore;
 	}
 
-// Method to map additional entity classes if needed
-	public static void mapAdditionalEntity(Class<?> entityClass) {
-		datastore.getMapper().map(entityClass);
-		datastore.ensureIndexes();
-	}
-
-// Database seeding methods
 	public static void initializeLocations(String filePath) throws IOException {
-		ObjectMapper objectMapper = new ObjectMapper();
-		JsonNode root = objectMapper.readTree(new File(filePath)).get("data");
+		if (filePath == null || filePath.trim().isEmpty()) {
+			throw new IllegalArgumentException("File path cannot be null or empty");
+		}
 
-// Only seed if the locations collection is empty
+		File jsonFile = new File(filePath);
+		if (!jsonFile.exists()) {
+			throw new IOException("Location data file not found: " + filePath);
+		}
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode rootNode = objectMapper.readTree(jsonFile);
+		JsonNode dataNode = rootNode.get("data");
+
+		if (dataNode == null || !dataNode.isArray()) {
+			throw new IOException("Invalid JSON structure: 'data' field must be an array");
+		}
+
 		if (datastore.find(Location.class).count() == 0) {
 			System.out.println("Starting location data initialization...");
 			Map<UUID, Location> locationMap = new HashMap<>();
+			int locationCount = 0;
 
-// First pass: Create all locations
-			for (JsonNode provinceNode : root) {
-				UUID provinceId = UUID.randomUUID();
-				createLocation(provinceNode, null, provinceId, locationMap);
+			try {
+				// Process top-level provinces
+				for (JsonNode provinceContainer : dataNode) {
+					Iterator<String> provinceFields = provinceContainer.fieldNames();
+					while (provinceFields.hasNext()) {
+						String provinceName = provinceFields.next();
+						JsonNode districtsArray = provinceContainer.get(provinceName);
+
+						System.out.println("Processing province: " + provinceName);
+
+						// Create Province
+						Location province = createBaseLocation(provinceName, "Province", null);
+						locationMap.put(province.getLocationId(), province);
+						locationCount++;
+
+						// Process Districts
+						if (districtsArray.isArray()) {
+							for (JsonNode districtContainer : districtsArray) {
+								Iterator<String> districtFields = districtContainer.fieldNames();
+								while (districtFields.hasNext()) {
+									String districtName = districtFields.next();
+									JsonNode sectorsArray = districtContainer.get(districtName);
+
+									System.out.println("Processing district: " + districtName);
+
+									// Create District
+									Location district = createBaseLocation(districtName, "District", province);
+									locationMap.put(district.getLocationId(), district);
+									locationCount++;
+
+									// Process Sectors
+									if (sectorsArray.isArray()) {
+										for (JsonNode sectorContainer : sectorsArray) {
+											Iterator<String> sectorFields = sectorContainer.fieldNames();
+											while (sectorFields.hasNext()) {
+												String sectorName = sectorFields.next();
+												JsonNode cellsArray = sectorContainer.get(sectorName);
+
+												System.out.println("Processing sector: " + sectorName);
+
+												// Create Sector
+												Location sector = createBaseLocation(sectorName, "Sector", district);
+												locationMap.put(sector.getLocationId(), sector);
+												locationCount++;
+
+												// Process Cells
+												if (cellsArray.isArray()) {
+													for (JsonNode cellContainer : cellsArray) {
+														Iterator<String> cellFields = cellContainer.fieldNames();
+														while (cellFields.hasNext()) {
+															String cellName = cellFields.next();
+															JsonNode villagesArray = cellContainer.get(cellName);
+
+															System.out.println("Processing cell: " + cellName);
+
+															// Create Cell
+															Location cell = createBaseLocation(cellName, "Cell",
+																	sector);
+															locationMap.put(cell.getLocationId(), cell);
+															locationCount++;
+
+															// Process Villages
+															if (villagesArray.isArray()) {
+																for (JsonNode villageNode : villagesArray) {
+																	if (villageNode.isTextual()) {
+																		String villageName = villageNode.asText()
+																				.trim();
+																		if (!villageName.isEmpty()) {
+																			System.out.println("Processing village: "
+																					+ villageName);
+
+																			Location village = createBaseLocation(
+																					villageName, "Village", cell);
+																			locationMap.put(village.getLocationId(),
+																					village);
+																			locationCount++;
+																		}
+																	}
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// Batch save all locations
+				System.out.println("Starting to save " + locationMap.size() + " locations...");
+				int savedCount = 0;
+				for (Location location : locationMap.values()) {
+					try {
+						datastore.save(location);
+						savedCount++;
+
+						if (savedCount % 100 == 0) {
+							System.out.println("Saved " + savedCount + " locations...");
+						}
+					} catch (Exception e) {
+						System.out
+								.println("Error saving location " + location.getLocationName() + ": " + e.getMessage());
+						e.printStackTrace();
+					}
+				}
+
+				System.out.println("Location data initialization completed. Processed " + locationCount
+						+ " locations, saved " + savedCount + " successfully");
+			} catch (Exception e) {
+				System.out.println("Error during location initialization: " + e.getMessage());
+				e.printStackTrace();
+				throw new RuntimeException("Failed to initialize locations", e);
 			}
-
-// Second pass: Set parent references and save all locations
-			for (Location location : locationMap.values()) {
-				datastore.save(location);
-			}
-
-			System.out.println("Location data initialization completed successfully");
 		} else {
 			System.out.println("Location data already exists - skipping initialization");
 		}
 	}
 
-	private static void createLocation(JsonNode node, Location parentLocation, UUID locationId,
-			Map<UUID, Location> locationMap) {
+	private static Location createBaseLocation(String name, String type, Location parent) {
 		Location location = new Location();
-		location.setLocationId(locationId);
-		location.setLocationName(node.get("location_name").asText());
-		location.setLocationType(node.get("location_type").asText());
-
-// Set location code if it exists in the JSON
-		JsonNode locationCodeNode = node.get("location_code");
-		if (locationCodeNode != null) {
-			location.setLocationCode(locationCodeNode.asText());
-		}
-
-		if (parentLocation != null) {
-			location.setParentLocation(parentLocation);
-		}
-
-// Store location in map
-		locationMap.put(locationId, location);
-
-		JsonNode children = node.get("children");
-		if (children != null) {
-			for (JsonNode child : children) {
-				createLocation(child, location, UUID.randomUUID(), locationMap);
-			}
-		}
+		location.setLocationId(UUID.randomUUID());
+		location.setLocationName(name.trim());
+		location.setLocationType(type);
+		location.setParentLocation(parent);
+		return location;
 	}
 }

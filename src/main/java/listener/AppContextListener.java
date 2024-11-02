@@ -19,6 +19,7 @@ public class AppContextListener implements ServletContextListener {
             URL resource = getClass().getClassLoader().getResource("assets/rwandaLocations.json");
             if (resource != null) {
                 String filePath = Paths.get(resource.toURI()).toString();
+                MongoDBConfig.getDatastore();
                 MongoDBConfig.initializeLocations(filePath);
             } else {
                 throw new IOException("locations.json file not found in assets directory");

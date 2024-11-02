@@ -5,11 +5,11 @@ Class-Path: morphia-core-2.4.14.jar smallrye-config-3.8.2.jar smallrye-c
  notation-2.4.0.jar smallrye-common-expression-2.4.0.jar smallrye-common
  -function-2.4.0.jar smallrye-common-constraint-2.4.0.jar smallrye-commo
  n-classloader-2.4.0.jar asm-9.7.jar smallrye-config-common-3.8.2.jar jb
- oss-logging-3.5.3.Final.jar mongodb-driver-legacy-4.11.2.jar classgraph
- -4.8.173.jar byte-buddy-1.14.17.jar slf4j-api-2.0.13.jar spotbugs-annot
- ations-4.8.5.jar jsr305-3.0.2.jar jsoup-1.17.2.jar mongodb-driver-sync-
- 4.11.1.jar bson-4.11.1.jar mongodb-driver-core-4.11.1.jar bson-record-c
- odec-4.11.1.jar jbcrypt-0.4.jar jackson-databind-2.16.1.jar jackson-ann
+ oss-logging-3.5.3.Final.jar mongodb-driver-sync-4.11.2.jar mongodb-driv
+ er-legacy-4.11.2.jar classgraph-4.8.173.jar byte-buddy-1.14.17.jar slf4
+ j-api-2.0.13.jar spotbugs-annotations-4.8.5.jar jsr305-3.0.2.jar jsoup-
+ 1.17.2.jar mongodb-driver-core-4.11.1.jar bson-record-codec-4.11.1.jar 
+ bson-4.11.1.jar jbcrypt-0.4.jar jackson-databind-2.16.1.jar jackson-ann
  otations-2.16.1.jar jackson-core-2.16.1.jar
 Created-By: Maven Integration for Eclipse
 
