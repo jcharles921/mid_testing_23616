@@ -1,12 +1,10 @@
 package controller;
 
-import com.mongodb.client.MongoClients;
-import dev.morphia.Datastore;
-import dev.morphia.Morphia;
 import dev.morphia.query.filters.Filters;
 import model.Location;
 import model.Person;
 import model.User;
+import utils.MongoDBConfig;
 import utils.PasswordUtils;
 
 import javax.servlet.ServletException;
@@ -16,23 +14,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.List;
+
 
 @WebServlet("/createUser")
 public class UserCreationServlet extends HttpServlet {
-    
-    private Datastore datastore;
+
+    private static final long serialVersionUID = 1L;
 
     @Override
-    public void init() throws ServletException {
-        datastore = Morphia.createDatastore(MongoClients.create(), "auca_library_db");
-        datastore.getMapper().mapPackage("model");
-        datastore.ensureIndexes();
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
+            var datastore = MongoDBConfig.getDatastore();
+
+            // Retrieve form parameters
             String firstName = request.getParameter("first_name");
             String lastName = request.getParameter("last_name");
             String genderString = request.getParameter("gender");
@@ -41,19 +37,30 @@ public class UserCreationServlet extends HttpServlet {
             String password = request.getParameter("password");
             String roleString = request.getParameter("role");
             String villageName = request.getParameter("village");
+            String expectedCellName = request.getParameter("cell");  // Cell name from the request to validate
 
-            // Find village location by name using modern filter syntax
-            Location village = datastore.find(Location.class)
+            // Find all village locations by name and filter by parent cell name
+            List<Location> villages = datastore.find(Location.class)
                 .filter(
                     Filters.and(
                         Filters.eq("locationName", villageName),
                         Filters.eq("locationType", "Village")
                     )
                 )
-                .first();
+                .iterator()
+                .toList();
 
-            if (village == null) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid village name.");
+            Location matchingVillage = null;
+            for (Location village : villages) {
+                Location cell = village.getParentLocation();
+                if (cell != null && cell.getLocationName().equalsIgnoreCase(expectedCellName)) {
+                    matchingVillage = village;
+                    break;
+                }
+            }
+
+            if (matchingVillage == null) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid village or cell name.");
                 return;
             }
 
@@ -65,7 +72,8 @@ public class UserCreationServlet extends HttpServlet {
             newUser.setPersonId(UUID.randomUUID());
             newUser.setFirstName(firstName);
             newUser.setLastName(lastName);
-            
+
+            // Set the gender
             try {
                 Person.Gender gender = Person.Gender.valueOf(genderString.toUpperCase());
                 newUser.setGender(gender);
@@ -77,7 +85,12 @@ public class UserCreationServlet extends HttpServlet {
             newUser.setPhoneNumber(phoneNumber);
             newUser.setUserName(userName);
             newUser.setPassword(hashedPassword);
-            
+
+            if (roleString == null) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Role is required.");
+                return;
+            }
+
             try {
                 User.RoleType role = User.RoleType.valueOf(roleString.toUpperCase());
                 newUser.setRole(role);
@@ -86,8 +99,10 @@ public class UserCreationServlet extends HttpServlet {
                 return;
             }
 
-            newUser.setVillageId(village.getLocationId());
+            // Set the villageId to the matched village
+            newUser.setVillageId(matchingVillage.getLocationId());
 
+            // Save the user to the database
             datastore.save(newUser);
 
             response.setStatus(HttpServletResponse.SC_CREATED);

@@ -74,7 +74,7 @@
 				<artifactId>maven-war-plugin</artifactId>
 				<version>3.3.2</version>
 				<configuration>
-					<failOnMissingWebXml>false</failOnMissingWebXml>
+				<!--	<failOnMissingWebXml>false</failOnMissingWebXml> -->
 					<packagingIncludes>WEB-INF/lib/*.jar</packagingIncludes>
 					<archive>
 						<manifest>
