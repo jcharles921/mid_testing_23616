@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign Up</title>
     <style>
+      /* Base styles */
       body {
         margin: 0;
         padding: 0;
@@ -16,37 +17,47 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
       }
+
       .container {
         display: flex;
         justify-content: center;
         align-items: center;
         height: 100%;
       }
+
+      /* Card styles */
       .card {
-        width: 300px;
+        width: auto;
         background-color: #fff;
         padding: 20px;
         border-radius: 5px;
         border-top: 4px solid #77ba99;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       }
+
+      /* Form styles */
       form {
         display: flex;
-        flex-direction: column;
-        gap: 10px;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 100px;
       }
+
       input {
-        padding: 10px;
+        padding: 12px;
         border: none;
         background-color: transparent;
         border-bottom: 1px solid #ccc;
         color: #333;
+        width: 100%;
+        margin-bottom: 15px;
       }
 
-      /* Custom Select Styling */
+      /* Select styles */
       .select-wrapper {
         position: relative;
         width: 100%;
+        margin-bottom: 15px;
       }
 
       select {
@@ -58,35 +69,11 @@
         cursor: pointer;
         color: #333;
         font-size: 1em;
-        -webkit-appearance: none !important;
-        -moz-appearance: none !important;
-        appearance: none !important;
+        appearance: none;
         transition: all 0.3s ease;
-        /* Firefox-specific padding fix */
-        -moz-padding-start: 10px;
-        /* Firefox-specific opacity fix */
-        -moz-opacity: 1;
       }
 
-      /* Remove Firefox focus outline */
-      select:-moz-focusring {
-        color: transparent;
-        text-shadow: 0 0 0 #333;
-      }
-
-      /* Remove Firefox dotted outline */
-      select::-moz-focus-inner {
-        border: 0;
-      }
-
-      /* Hide default Firefox arrow */
-      @-moz-document url-prefix() {
-        select {
-          text-indent: 0.01px;
-          text-overflow: "";
-        }
-      }
-
+      /* Select arrow */
       .select-wrapper::after {
         content: "";
         position: absolute;
@@ -100,7 +87,6 @@
         border-top: 5px solid #77ba99;
         pointer-events: none;
         transition: transform 0.3s ease;
-        /* Ensure the arrow shows up in Firefox */
         z-index: 1;
       }
 
@@ -108,6 +94,7 @@
         transform: translateY(-50%) scale(1.2);
       }
 
+      /* Select states */
       select:focus {
         outline: none;
         border-bottom: 2px solid #77ba99;
@@ -117,8 +104,13 @@
         background-color: #f8f8f8;
       }
 
-      /* Style the options - Firefox specific */
+      /* Firefox-specific styles */
       @-moz-document url-prefix() {
+        select {
+          text-indent: 0.01px;
+          text-overflow: "";
+        }
+
         select option {
           background-color: white;
           color: #333;
@@ -127,8 +119,8 @@
 
         select option:hover,
         select option:focus {
-          background-color: #77ba99 !important;
-          color: white !important;
+          background-color: #77ba99;
+          color: white;
           box-shadow: 0 0 10px 100px #77ba99 inset;
         }
       }
@@ -155,11 +147,14 @@
         border-top-color: #ff6b6b;
       }
 
+      /* Button styles */
       .buttons {
+        margin-top: 15px;
         display: flex;
-        justify-content: flex-end;
+        justify-content: flex-start;
         gap: 10px;
       }
+
       .login-button {
         padding: 10px 20px;
         background-color: #77ba99;
@@ -168,11 +163,16 @@
         border-radius: 5px;
         cursor: pointer;
       }
+
+      /* Error message */
       .error-message {
         color: red;
         font-size: 12px;
-        margin-top: 5px;
+        margin-top: -10px;
+        margin-bottom: 10px;
       }
+
+      /* Responsive styles */
       @media (max-width: 480px) {
         .card {
           width: 100%;
@@ -184,90 +184,125 @@
   <body>
     <div class="container">
       <div class="card">
-        <form id="signupForm" method="post" action="register">
-          <input
-            type="text"
-            id="username"
-            name="userName"
-            placeholder="Enter username"
-            required
-          />
-          <div id="usernameError" class="error-message"></div>
-
-          <input
-            type="email"
-            id="email"
-            name="email"
-            placeholder="Enter email"
-            required
-          />
-          <div id="emailError" class="error-message"></div>
-
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Enter password"
-            required
-          />
-          <div id="passwordError" class="error-message"></div>
-
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            placeholder="Confirm password"
-            required
-          />
-          <div id="confirmPasswordError" class="error-message"></div>
-
-          <!-- Province Selection -->
-          <div class="select-wrapper">
-            <select
-              id="province"
-              name="province"
-              onchange="fetchDistricts()"
+        <form id="signupForm" method="post" action="createUser">
+          <div class="part1">
+            <input
+              type="text"
+              id="full_name"
+              name="full_name"
+              placeholder="Enter full name"
               required
-            >
-              <option value="" disabled selected>Select Province</option>
-            </select>
-          </div>
+            />
+            <div id="fullNameError" class="error-message"></div>
 
-          <!-- District Selection -->
-          <div class="select-wrapper">
-            <select
-              id="district"
-              name="district"
-              onchange="fetchSectors()"
+            <input
+              type="text"
+              id="user_name"
+              name="user_name"
+              placeholder="Enter username"
               required
-            >
-              <option value="" disabled selected>Select District</option>
-            </select>
+            />
+            <div id="userNameError" class="error-message"></div>
+
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter password"
+              required
+            />
+            <div id="passwordError" class="error-message"></div>
+
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              placeholder="Confirm password"
+              required
+            />
+            <div id="confirmPasswordError" class="error-message"></div>
+
+            <input
+              type="tel"
+              id="phone_number"
+              name="phone_number"
+              placeholder="Enter phone number"
+              required
+            />
+            <div id="phoneError" class="error-message"></div>
+
+            <div class="select-wrapper">
+              <select id="role" name="role" required>
+                <option value="" disabled selected>Select Role</option>
+                <option value="student">Student</option>
+                <option value="manager">Manager</option>
+                <option value="teacher">Teacher</option>
+                <option value="hod">Head of Department</option>
+                <option value="librarian">Librarian</option>
+              </select>
+            </div>
+            <div id="roleError" class="error-message"></div>
+
+            <div class="select-wrapper">
+              <select id="gender" name="gender" required>
+                <option value="" disabled selected>Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div id="genderError" class="error-message"></div>
+
+            <div class="buttons">
+              <button type="submit" class="login-button">Register</button>
+            </div>
           </div>
 
-          <!-- Sector Selection -->
-          <div class="select-wrapper">
-            <select id="sector" name="sector" onchange="fetchCells()" required>
-              <option value="" disabled selected>Select Sector</option>
-            </select>
-          </div>
+          <div class="part2">
+            <div class="select-wrapper">
+              <select
+                id="province"
+                name="province"
+                onchange="fetchDistricts()"
+                required
+              >
+                <option value="" disabled selected>Select Province</option>
+              </select>
+            </div>
 
-          <!-- Cell Selection -->
-          <div class="select-wrapper">
-            <select id="cell" name="cell" onchange="fetchVillages()" required>
-              <option value="" disabled selected>Select Cell</option>
-            </select>
-          </div>
+            <div class="select-wrapper">
+              <select
+                id="district"
+                name="district"
+                onchange="fetchSectors()"
+                required
+              >
+                <option value="" disabled selected>Select District</option>
+              </select>
+            </div>
 
-          <!-- Village Selection -->
-          <div class="select-wrapper">
-            <select id="village" name="village" required>
-              <option value="" disabled selected>Select Village</option>
-            </select>
-          </div>
+            <div class="select-wrapper">
+              <select
+                id="sector"
+                name="sector"
+                onchange="fetchCells()"
+                required
+              >
+                <option value="" disabled selected>Select Sector</option>
+              </select>
+            </div>
 
-          <div class="buttons">
-            <button type="submit" class="login-button">Register</button>
+            <div class="select-wrapper">
+              <select id="cell" name="cell" onchange="fetchVillages()" required>
+                <option value="" disabled selected>Select Cell</option>
+              </select>
+            </div>
+
+            <div class="select-wrapper">
+              <select id="village" name="village" required>
+                <option value="" disabled selected>Select Village</option>
+              </select>
+            </div>
           </div>
         </form>
       </div>
@@ -279,7 +314,43 @@
         "x-rapidapi-host": "rwanda.p.rapidapi.com",
       };
 
-      document.addEventListener("DOMContentLoaded", fetchProvinces);
+      document.addEventListener("DOMContentLoaded", () => {
+        fetchProvinces();
+
+        // Add form submission handler
+        document
+          .getElementById("signupForm")
+          .addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            // Get full name and split it
+            const fullName = document.getElementById("full_name").value;
+            const nameParts = fullName.trim().split(/\s+/);
+
+            if (nameParts.length < 2) {
+              document.getElementById("fullNameError").textContent =
+                "Please enter both first and last name";
+              return;
+            }
+
+            // Create hidden inputs for first and last name
+            const firstName = document.createElement("input");
+            firstName.type = "hidden";
+            firstName.name = "first_name";
+            firstName.value = nameParts[0];
+
+            const lastName = document.createElement("input");
+            lastName.type = "hidden";
+            lastName.name = "last_name";
+            lastName.value = nameParts.slice(1).join(" ");
+
+            this.appendChild(firstName);
+            this.appendChild(lastName);
+
+            // Submit the form
+            this.submit();
+          });
+      });
 
       async function fetchProvinces() {
         try {
@@ -287,7 +358,6 @@
             headers: API_HEADERS,
           });
           const data = await response.json();
-          console.log(data);
           populateDropdown("province", data?.data);
         } catch (error) {
           console.error("Error fetching provinces:", error);
@@ -316,7 +386,7 @@
             { headers: API_HEADERS }
           );
           const data = await response.json();
-          populateDropdown("sector", data.data);
+          populateDropdown("sector", data?.data);
         } catch (error) {
           console.error("Error fetching sectors:", error);
         }
@@ -357,7 +427,7 @@
 
       function populateDropdown(id, items) {
         const dropdown = document.getElementById(id);
-        dropdown.innerHTML = '<option value="">Select</option>'; // Reset options
+        dropdown.innerHTML = '<option value="">Select</option>';
         items.forEach((item) => {
           const option = document.createElement("option");
           option.value = item.toLowerCase();
