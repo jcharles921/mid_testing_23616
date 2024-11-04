@@ -5,6 +5,7 @@ import model.Location;
 import model.Person;
 import model.User;
 import utils.MongoDBConfig;
+import utils.NotificationService;
 import utils.PasswordUtils;
 
 import javax.servlet.ServletException;
@@ -47,11 +48,10 @@ public class UserCreationServlet extends HttpServlet {
             String userName = jsonObject.optString("user_name");
             String password = jsonObject.optString("password");
             String genderString = jsonObject.optString("gender");
-            String phoneNumber = jsonObject.optString("phone_number");
+            String phoneNumber = "+250" + jsonObject.optString("phone_number");
             String roleString = jsonObject.optString("role");
             String villageName = jsonObject.optString("village");
             String expectedCellName = jsonObject.optString("cell");
-            System.out.println(password+"=====Password");
 
             // Validate required fields
             if (firstName == null || firstName.trim().isEmpty() || lastName == null || lastName.trim().isEmpty()
@@ -63,7 +63,6 @@ public class UserCreationServlet extends HttpServlet {
 
             // Check if username already exists
             User existingUser = datastore.find(User.class).filter(Filters.eq("userName", userName)).first();
-
             if (existingUser != null) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 response.getWriter().write("{\"error\": \"Username already exists.\"}");
@@ -121,12 +120,20 @@ public class UserCreationServlet extends HttpServlet {
             }
 
             newUser.setVillageId(matchingVillage.getLocationId());
-
+            // Send confirmation SMS with location details
+            NotificationService notificationService = new NotificationService();
+            String locationMessage = String.format("Hello %s, your registration is successful! Your location: %s, %s.",
+                    firstName,
+                    matchingVillage.getLocationName(),
+                    matchingVillage.getParentLocation().getLocationName());
+            notificationService.sendSms(phoneNumber, locationMessage);
             // Save user
             datastore.save(newUser);
 
+         
+
             response.setStatus(HttpServletResponse.SC_CREATED);
-            response.getWriter().write("{\"message\": \"Registration successful! Redirecting to login page...\"}");
+            response.getWriter().write("{\"message\": \"Registration successful! Confirmation SMS sent.\"}");
 
         } catch (Exception e) {
             e.printStackTrace();

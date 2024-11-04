@@ -499,10 +499,10 @@
           if (response.ok) {
             document.getElementById("successMessage").textContent =
               "Registration successful!";
-            // setTimeout(() => {
-            //   window.location.href = "./";
-            // }, 2000);
-            // form.reset(); 
+            setTimeout(() => {
+              window.location.href = "./";
+            }, 2000);
+            form.reset();
           } else {
             const error = await response.json();
             document.getElementById("mainError").textContent =
