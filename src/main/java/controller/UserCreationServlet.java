@@ -16,7 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.List;
-import org.json.JSONObject; // Make sure to import the JSON library
+import org.json.JSONObject;
 import java.io.BufferedReader;
 
 @WebServlet("/createUser")
@@ -120,17 +120,27 @@ public class UserCreationServlet extends HttpServlet {
             }
 
             newUser.setVillageId(matchingVillage.getLocationId());
+
+            // Construct full location message
+            StringBuilder locationMessageBuilder = new StringBuilder();
+            Location currentLocation = matchingVillage;
+
+            // Build full location hierarchy
+            while (currentLocation != null) {
+                locationMessageBuilder.insert(0, currentLocation.getLocationName() + " ");
+                currentLocation = currentLocation.getParentLocation();
+            }
+
             // Send confirmation SMS with location details
             NotificationService notificationService = new NotificationService();
-            String locationMessage = String.format("Hello %s, your registration is successful! Your location: %s, %s.",
+            String locationMessage = String.format("Hello %s, your registration is successful! Your location: %s.",
                     firstName,
-                    matchingVillage.getLocationName(),
-                    matchingVillage.getParentLocation().getLocationName());
+                    locationMessageBuilder.toString().trim());  // Trim to remove extra space
+
             notificationService.sendSms(phoneNumber, locationMessage);
+
             // Save user
             datastore.save(newUser);
-
-         
 
             response.setStatus(HttpServletResponse.SC_CREATED);
             response.getWriter().write("{\"message\": \"Registration successful! Confirmation SMS sent.\"}");
