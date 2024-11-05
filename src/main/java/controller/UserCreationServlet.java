@@ -5,6 +5,7 @@ import model.Location;
 import model.Person;
 import model.User;
 import utils.MongoDBConfig;
+import utils.NotificationService;
 import utils.PasswordUtils;
 
 import javax.servlet.ServletException;
@@ -15,40 +16,63 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.List;
-
+import org.json.JSONObject;
+import java.io.BufferedReader;
 
 @WebServlet("/createUser")
 public class UserCreationServlet extends HttpServlet {
-
     private static final long serialVersionUID = 1L;
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        response.setContentType("application/json;charset=UTF-8");
+
         try {
             var datastore = MongoDBConfig.getDatastore();
 
-            // Retrieve form parameters
-            String firstName = request.getParameter("first_name");
-            String lastName = request.getParameter("last_name");
-            String genderString = request.getParameter("gender");
-            String phoneNumber = request.getParameter("phone_number");
-            String userName = request.getParameter("user_name");
-            String password = request.getParameter("password");
-            String roleString = request.getParameter("role");
-            String villageName = request.getParameter("village");
-            String expectedCellName = request.getParameter("cell");  // Cell name from the request to validate
+            // Read the JSON body from the request
+            StringBuilder jsonBody = new StringBuilder();
+            String line;
+            try (BufferedReader reader = request.getReader()) {
+                while ((line = reader.readLine()) != null) {
+                    jsonBody.append(line);
+                }
+            }
 
-            // Find all village locations by name and filter by parent cell name
+            // Parse the JSON object
+            JSONObject jsonObject = new JSONObject(jsonBody.toString());
+            String firstName = jsonObject.optString("first_name");
+            String lastName = jsonObject.optString("last_name");
+            String userName = jsonObject.optString("user_name");
+            String password = jsonObject.optString("password");
+            String genderString = jsonObject.optString("gender");
+            String phoneNumber = "+250" + jsonObject.optString("phone_number");
+            String roleString = jsonObject.optString("role");
+            String villageName = jsonObject.optString("village");
+            String expectedCellName = jsonObject.optString("cell");
+
+            // Validate required fields
+            if (firstName == null || firstName.trim().isEmpty() || lastName == null || lastName.trim().isEmpty()
+                    || userName == null || userName.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"error\": \"All fields are required.\"}");
+                return;
+            }
+
+            // Check if username already exists
+            User existingUser = datastore.find(User.class).filter(Filters.eq("userName", userName)).first();
+            if (existingUser != null) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"error\": \"Username already exists.\"}");
+                return;
+            }
+
+            // Find matching village
             List<Location> villages = datastore.find(Location.class)
-                .filter(
-                    Filters.and(
-                        Filters.eq("locationName", villageName),
-                        Filters.eq("locationType", "Village")
-                    )
-                )
-                .iterator()
-                .toList();
+                    .filter(Filters.and(Filters.eq("locationName", villageName), Filters.eq("locationType", "Village")))
+                    .iterator().toList();
 
             Location matchingVillage = null;
             for (Location village : villages) {
@@ -60,56 +84,71 @@ public class UserCreationServlet extends HttpServlet {
             }
 
             if (matchingVillage == null) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid village or cell name.");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"error\": \"Invalid village or cell selection.\"}");
                 return;
             }
 
-            // Hash the password
-            String hashedPassword = PasswordUtils.hashPassword(password);
-
-            // Create and save the new user
+            // Create new user
             User newUser = new User();
             newUser.setPersonId(UUID.randomUUID());
             newUser.setFirstName(firstName);
             newUser.setLastName(lastName);
 
-            // Set the gender
+            // Set gender
             try {
                 Person.Gender gender = Person.Gender.valueOf(genderString.toUpperCase());
                 newUser.setGender(gender);
             } catch (IllegalArgumentException e) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid gender value.");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"error\": \"Invalid gender selection.\"}");
                 return;
             }
 
             newUser.setPhoneNumber(phoneNumber);
             newUser.setUserName(userName);
-            newUser.setPassword(hashedPassword);
+            newUser.setPassword(PasswordUtils.hashPassword(password));
 
-            if (roleString == null) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Role is required.");
-                return;
-            }
-
+            // Set role
             try {
                 User.RoleType role = User.RoleType.valueOf(roleString.toUpperCase());
                 newUser.setRole(role);
             } catch (IllegalArgumentException e) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid role value.");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"error\": \"Invalid role selection.\"}");
                 return;
             }
 
-            // Set the villageId to the matched village
             newUser.setVillageId(matchingVillage.getLocationId());
 
-            // Save the user to the database
+            // Construct full location message
+            StringBuilder locationMessageBuilder = new StringBuilder();
+            Location currentLocation = matchingVillage;
+
+            // Build full location hierarchy
+            while (currentLocation != null) {
+                locationMessageBuilder.insert(0, currentLocation.getLocationName() + " ");
+                currentLocation = currentLocation.getParentLocation();
+            }
+
+            // Send confirmation SMS with location details
+            NotificationService notificationService = new NotificationService();
+            String locationMessage = String.format("Hello %s, your registration is successful! Your location: %s.",
+                    firstName,
+                    locationMessageBuilder.toString().trim());  // Trim to remove extra space
+
+            notificationService.sendSms(phoneNumber, locationMessage);
+
+            // Save user
             datastore.save(newUser);
 
             response.setStatus(HttpServletResponse.SC_CREATED);
-            response.getWriter().write("User created successfully.");
+            response.getWriter().write("{\"message\": \"Registration successful! Confirmation SMS sent.\"}");
+
         } catch (Exception e) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error creating user.");
             e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("{\"error\": \"An error occurred during registration. Please try again.\"}");
         }
     }
 }

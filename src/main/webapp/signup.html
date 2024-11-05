@@ -45,12 +45,19 @@
 
       input {
         padding: 12px;
+        font-size: medium;
         border: none;
         background-color: transparent;
         border-bottom: 1px solid #ccc;
         color: #333;
         width: 100%;
         margin-bottom: 15px;
+      }
+
+      input::placeholder {
+        font-size: medium;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
       }
 
       /* Select styles */
@@ -71,6 +78,16 @@
         font-size: 1em;
         appearance: none;
         transition: all 0.3s ease;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+      }
+
+      select option {
+        color: #333;
+      }
+
+      select option[disabled] {
+        color: #999;
       }
 
       /* Select arrow */
@@ -104,27 +121,6 @@
         background-color: #f8f8f8;
       }
 
-      /* Firefox-specific styles */
-      @-moz-document url-prefix() {
-        select {
-          text-indent: 0.01px;
-          text-overflow: "";
-        }
-
-        select option {
-          background-color: white;
-          color: #333;
-          padding: 10px;
-        }
-
-        select option:hover,
-        select option:focus {
-          background-color: #77ba99;
-          color: white;
-          box-shadow: 0 0 10px 100px #77ba99 inset;
-        }
-      }
-
       /* Disabled state */
       select:disabled {
         color: #999;
@@ -149,7 +145,7 @@
 
       /* Button styles */
       .buttons {
-        margin-top: 15px;
+        margin-top: 25px;
         display: flex;
         justify-content: flex-start;
         gap: 10px;
@@ -162,6 +158,11 @@
         border: none;
         border-radius: 5px;
         cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .login-button:hover {
+        background-color: #669982;
       }
 
       /* Error message */
@@ -172,11 +173,31 @@
         margin-bottom: 10px;
       }
 
+      #mainError {
+        color: red;
+        text-align: center;
+        margin-bottom: 15px;
+        font-size: 14px;
+      }
+
+      #successMessage {
+        color: #77ba99;
+        text-align: center;
+        margin-bottom: 15px;
+        font-size: 14px;
+      }
+
       /* Responsive styles */
-      @media (max-width: 480px) {
+      @media (max-width: 768px) {
+        form {
+          flex-direction: column;
+          gap: 20px;
+        }
+
         .card {
-          width: 100%;
-          max-width: 300px;
+          width: 90%;
+          max-width: 400px;
+          margin: 20px;
         }
       }
     </style>
@@ -184,6 +205,8 @@
   <body>
     <div class="container">
       <div class="card">
+        <div id="mainError"></div>
+        <div id="successMessage"></div>
         <form id="signupForm" method="post" action="createUser">
           <div class="part1">
             <input
@@ -193,7 +216,7 @@
               placeholder="Enter full name"
               required
             />
-            <div id="fullNameError" class="error-message"></div>
+            <div id="full_nameError" class="error-message"></div>
 
             <input
               type="text"
@@ -202,7 +225,7 @@
               placeholder="Enter username"
               required
             />
-            <div id="userNameError" class="error-message"></div>
+            <div id="user_nameError" class="error-message"></div>
 
             <input
               type="password"
@@ -229,7 +252,8 @@
               placeholder="Enter phone number"
               required
             />
-            <div id="phoneError" class="error-message"></div>
+            <div id="phone_numberError" class="error-message"></div>
+            <!-- Corrected -->
 
             <div class="select-wrapper">
               <select id="role" name="role" required>
@@ -260,15 +284,11 @@
 
           <div class="part2">
             <div class="select-wrapper">
-              <select
-                id="province"
-                name="province"
-                onchange="fetchDistricts()"
-                required
-              >
+              <select id="province" name="province" required>
                 <option value="" disabled selected>Select Province</option>
               </select>
             </div>
+            <div id="provinceError" class="error-message"></div>
 
             <div class="select-wrapper">
               <select
@@ -280,6 +300,7 @@
                 <option value="" disabled selected>Select District</option>
               </select>
             </div>
+            <div id="districtError" class="error-message"></div>
 
             <div class="select-wrapper">
               <select
@@ -291,150 +312,303 @@
                 <option value="" disabled selected>Select Sector</option>
               </select>
             </div>
+            <div id="sectorError" class="error-message"></div>
 
             <div class="select-wrapper">
               <select id="cell" name="cell" onchange="fetchVillages()" required>
                 <option value="" disabled selected>Select Cell</option>
               </select>
             </div>
+            <div id="cellError" class="error-message"></div>
 
             <div class="select-wrapper">
               <select id="village" name="village" required>
                 <option value="" disabled selected>Select Village</option>
               </select>
             </div>
+            <div id="villageError" class="error-message"></div>
           </div>
         </form>
       </div>
     </div>
-    <script>
-      const API_URL = "https://rwanda.p.rapidapi.com";
-      const API_HEADERS = {
-        "x-rapidapi-key": "2199840b10msh703983e3fedcdb6p1d3842jsn70a2ff40d543",
-        "x-rapidapi-host": "rwanda.p.rapidapi.com",
-      };
+  </body>
 
-      document.addEventListener("DOMContentLoaded", () => {
-        fetchProvinces();
+  <script>
+    const API_URL = "https://rwanda.p.rapidapi.com";
+    const API_HEADERS = {
+      "x-rapidapi-key": "2199840b10msh703983e3fedcdb6p1d3842jsn70a2ff40d543",
+      "x-rapidapi-host": "rwanda.p.rapidapi.com",
+    };
 
-        // Add form submission handler
-        document
-          .getElementById("signupForm")
-          .addEventListener("submit", function (e) {
-            e.preventDefault();
+    // Form validation patterns
+    const PATTERNS = {
+      phone: /^(\+?250|0)?[67][0-9]{8}$/,
+      password: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/,
+      username: /^[a-zA-Z0-9_]{3,20}$/,
+    };
 
-            // Get full name and split it
-            const fullName = document.getElementById("full_name").value;
-            const nameParts = fullName.trim().split(/\s+/);
+    // Error messages
+    const ERROR_MESSAGES = {
+      phone: "Please enter a valid Rwanda phone number (e.g., +250781234567)",
+      password:
+        "Password must be at least 8 characters with letters and numbers",
+      username:
+        "Username must be 3-20 characters, using only letters, numbers, and underscore",
+      fullName: "Please enter both first and last name",
+      passwordMatch: "Passwords do not match",
+      required: "This field is required",
+    };
 
-            if (nameParts.length < 2) {
-              document.getElementById("fullNameError").textContent =
-                "Please enter both first and last name";
-              return;
-            }
+    document.addEventListener("DOMContentLoaded", () => {
+      // Initialize form
+      initializeForm();
+      // Fetch initial data
+      fetchProvinces();
+    });
 
-            // Create hidden inputs for first and last name
-            const firstName = document.createElement("input");
-            firstName.type = "hidden";
-            firstName.name = "first_name";
-            firstName.value = nameParts[0];
+    function initializeForm() {
+      setupFormValidation();
+      setupDropdowns();
+    }
 
-            const lastName = document.createElement("input");
-            lastName.type = "hidden";
-            lastName.name = "last_name";
-            lastName.value = nameParts.slice(1).join(" ");
+    function setupFormValidation() {
+      const form = document.getElementById("signupForm"); // Ensure you get the form here
+      const inputs = form.querySelectorAll("input, select");
 
-            this.appendChild(firstName);
-            this.appendChild(lastName);
-
-            // Submit the form
-            this.submit();
-          });
+      // Add validation to all inputs
+      inputs.forEach((input) => {
+        input.addEventListener("input", () => validateField(input));
+        input.addEventListener("blur", () => validateField(input));
       });
 
-      async function fetchProvinces() {
+      // Add form submit handler
+      form.addEventListener("submit", handleSubmit); // Bind the handleSubmit function here
+    }
+
+    function setupDropdowns() {
+      // Set up change handlers for location dropdowns
+      document.getElementById("province").addEventListener("change", () => {
+        fetchDistricts();
+        clearDropdowns(["district", "sector", "cell", "village"]);
+      });
+
+      document.getElementById("district").addEventListener("change", () => {
+        fetchSectors();
+        clearDropdowns(["sector", "cell", "village"]);
+      });
+
+      document.getElementById("sector").addEventListener("change", () => {
+        fetchCells();
+        clearDropdowns(["cell", "village"]);
+      });
+
+      document.getElementById("cell").addEventListener("change", () => {
+        fetchVillages();
+        clearDropdowns(["village"]);
+      });
+    }
+
+    function validateField(input) {
+      const errorElement = document.getElementById(`${input.id}Error`);
+      let isValid = true;
+      let errorMessage = "";
+
+      // Clear previous error if the error element exists
+      if (errorElement) {
+        errorElement.textContent = "";
+      }
+
+      // Required field validation
+      if (input.required && !input.value) {
+        isValid = false;
+        errorMessage = ERROR_MESSAGES.required;
+      }
+
+      // Pattern validation for specific fields
+      switch (input.id) {
+        case "phone_number":
+          if (input.value && !PATTERNS.phone.test(input.value)) {
+            isValid = false;
+            errorMessage = ERROR_MESSAGES.phone;
+          }
+          break;
+
+        case "confirmPassword":
+          const password = document.getElementById("password").value;
+          if (input.value && input.value !== password) {
+            isValid = false;
+            errorMessage = ERROR_MESSAGES.passwordMatch;
+          }
+          break;
+
+        case "user_name":
+          if (input.value && !PATTERNS.username.test(input.value)) {
+            isValid = false;
+            errorMessage = ERROR_MESSAGES.username;
+          }
+          break;
+
+        case "full_name":
+          if (input.value && input.value.trim().split(/\s+/).length < 2) {
+            isValid = false;
+            errorMessage = ERROR_MESSAGES.fullName;
+          }
+          break;
+      }
+
+      // Show error message if validation failed
+      if (!isValid && errorElement) {
+        errorElement.textContent = errorMessage;
+      }
+
+      return isValid;
+    }
+
+    async function handleSubmit(event) {
+      event.preventDefault(); // Prevent the default form submission
+      const form = event.target; // Get the form from the event
+      const inputs = form.querySelectorAll("input, select");
+      let isFormValid = true;
+
+      // Validate all fields
+      inputs.forEach((input) => {
+        const isValid = validateField(input);
+        if (!isValid) isFormValid = false;
+      });
+
+      if (isFormValid) {
+        const formData = new FormData(form);
+        const fullName = formData.get("full_name") || "";
+        const [first_name, last_name] = fullName.split(" ");
+
+        formData.set("first_name", first_name || "");
+        formData.set("last_name", last_name || "");
+
+        formData.delete("full_name");
+
+        const userData = Object.fromEntries(formData.entries());
+        document.getElementById("mainError").textContent = "";
+
         try {
-          const response = await fetch(`${API_URL}/provinces`, {
-            headers: API_HEADERS,
+          const response = await fetch(form.action, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(userData),
           });
-          const data = await response.json();
-          populateDropdown("province", data?.data);
-        } catch (error) {
-          console.error("Error fetching provinces:", error);
-        }
-      }
 
-      async function fetchDistricts() {
-        const province = document.getElementById("province").value;
-        try {
-          const response = await fetch(`${API_URL}/districts?p=${province}`, {
-            headers: API_HEADERS,
-          });
-          const data = await response.json();
-          populateDropdown("district", data?.data);
+          if (response.ok) {
+            document.getElementById("successMessage").textContent =
+              "Registration successful!";
+            setTimeout(() => {
+              window.location.href = "./";
+            }, 2000);
+            form.reset();
+          } else {
+            const error = await response.json();
+            document.getElementById("mainError").textContent =
+              error.message || "An error occurred.";
+          }
         } catch (error) {
-          console.error("Error fetching districts:", error);
+          document.getElementById("mainError").textContent =
+            "Failed to submit form. Please try again.";
         }
+      } else {
+        document.getElementById("mainError").textContent =
+          "Please correct the highlighted fields.";
       }
+    }
 
-      async function fetchSectors() {
-        const province = document.getElementById("province").value;
-        const district = document.getElementById("district").value;
-        try {
-          const response = await fetch(
-            `${API_URL}/sectors?p=${province}&d=${district}`,
-            { headers: API_HEADERS }
-          );
-          const data = await response.json();
-          populateDropdown("sector", data?.data);
-        } catch (error) {
-          console.error("Error fetching sectors:", error);
-        }
-      }
-
-      async function fetchCells() {
-        const province = document.getElementById("province").value;
-        const district = document.getElementById("district").value;
-        const sector = document.getElementById("sector").value;
-        try {
-          const response = await fetch(
-            `${API_URL}/cells?p=${province}&d=${district}&s=${sector}`,
-            { headers: API_HEADERS }
-          );
-          const data = await response.json();
-          populateDropdown("cell", data?.data);
-        } catch (error) {
-          console.error("Error fetching cells:", error);
-        }
-      }
-
-      async function fetchVillages() {
-        const province = document.getElementById("province").value;
-        const district = document.getElementById("district").value;
-        const sector = document.getElementById("sector").value;
-        const cell = document.getElementById("cell").value;
-        try {
-          const response = await fetch(
-            `${API_URL}/villages?p=${province}&d=${district}&s=${sector}&c=${cell}`,
-            { headers: API_HEADERS }
-          );
-          const data = await response.json();
-          populateDropdown("village", data?.data);
-        } catch (error) {
-          console.error("Error fetching villages:", error);
-        }
-      }
-
-      function populateDropdown(id, items) {
-        const dropdown = document.getElementById(id);
-        dropdown.innerHTML = '<option value="">Select</option>';
-        items.forEach((item) => {
-          const option = document.createElement("option");
-          option.value = item.toLowerCase();
-          option.textContent = item;
-          dropdown.appendChild(option);
+    async function fetchProvinces() {
+      try {
+        const response = await fetch(`${API_URL}/provinces`, {
+          headers: API_HEADERS,
         });
+        const data = await response.json();
+        populateDropdown("province", data?.data);
+      } catch (error) {
+        console.error("Error fetching provinces:", error);
       }
-    </script>
-  </body>
+    }
+
+    async function fetchDistricts() {
+      const province = document.getElementById("province").value;
+      try {
+        const response = await fetch(`${API_URL}/districts?p=${province}`, {
+          headers: API_HEADERS,
+        });
+        const data = await response.json();
+        populateDropdown("district", data?.data);
+      } catch (error) {
+        console.error("Error fetching districts:", error);
+      }
+    }
+
+    async function fetchSectors() {
+      const province = document.getElementById("province").value;
+      const district = document.getElementById("district").value;
+      try {
+        const response = await fetch(
+          `${API_URL}/sectors?p=${province}&d=${district}`,
+          { headers: API_HEADERS }
+        );
+        const data = await response.json();
+        populateDropdown("sector", data?.data);
+      } catch (error) {
+        console.error("Error fetching sectors:", error);
+      }
+    }
+
+    async function fetchCells() {
+      const province = document.getElementById("province").value;
+      const district = document.getElementById("district").value;
+      const sector = document.getElementById("sector").value;
+      try {
+        const response = await fetch(
+          `${API_URL}/cells?p=${province}&d=${district}&s=${sector}`,
+          { headers: API_HEADERS }
+        );
+        const data = await response.json();
+        populateDropdown("cell", data?.data);
+      } catch (error) {
+        console.error("Error fetching cells:", error);
+      }
+    }
+
+    async function fetchVillages() {
+      const province = document.getElementById("province").value;
+      const district = document.getElementById("district").value;
+      const sector = document.getElementById("sector").value;
+      const cell = document.getElementById("cell").value;
+      try {
+        const response = await fetch(
+          `${API_URL}/villages?p=${province}&d=${district}&s=${sector}&c=${cell}`,
+          { headers: API_HEADERS }
+        );
+        const data = await response.json();
+        populateDropdown("village", data?.data);
+      } catch (error) {
+        console.error("Error fetching villages:", error);
+      }
+    }
+
+    function populateDropdown(id, items) {
+      const dropdown = document.getElementById(id);
+      dropdown.innerHTML = '<option value="">Select</option>';
+      items.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.toLowerCase();
+        option.textContent = item;
+        dropdown.appendChild(option);
+      });
+    }
+
+    function clearDropdowns(dropdownIds) {
+      dropdownIds.forEach((id) => {
+        const selectElement = document.getElementById(id);
+        selectElement.innerHTML = `<option value="" disabled selected>Select ${
+          selectElement.id.charAt(0).toUpperCase() + selectElement.id.slice(1)
+        }</option>`;
+      });
+    }
+  </script>
 </html>
