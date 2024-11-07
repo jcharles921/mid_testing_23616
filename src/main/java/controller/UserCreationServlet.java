@@ -133,9 +133,10 @@ public class UserCreationServlet extends HttpServlet {
 
             // Send confirmation SMS with location details
             NotificationService notificationService = new NotificationService();
-            String locationMessage = String.format("Hello %s, your registration is successful! Your location: %s.",
+            String locationMessage = String.format("Dear %s %s,\n\nYour account has been successfully registered in our system. You are registered under the following administrative location:\n%s\n\nThank you for registering with our service.",
                     firstName,
-                    locationMessageBuilder.toString().trim());  // Trim to remove extra space
+                    lastName,
+                    locationMessageBuilder.toString().trim());
 
             notificationService.sendSms(phoneNumber, locationMessage);
 
