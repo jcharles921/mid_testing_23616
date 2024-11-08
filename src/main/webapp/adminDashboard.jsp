@@ -1,3 +1,9 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%
+    // Directly access session attributes since authentication is handled by a filter.
+    String userName = (String) session.getAttribute("userName");
+    String role = (String) session.getAttribute("role");
+%>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -23,7 +29,8 @@
       <!-- Main Panel -->
       <main class="main-panel">
         <header>
-          <h1>Welcome, Admin</h1>
+          <h1>Welcome, <%= userName %>!</h1>
+          <p>Role: <%= role %></p>
         </header>
 
         <section class="summary-cards">

@@ -1,3 +1,15 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%
+    // Directly access session attributes since authentication is handled by a filter
+    String userName = (String) session.getAttribute("userName");
+    String role = (String) session.getAttribute("role");
+
+    // Validate role
+    if (session == null || userName == null || role == null || !role.equals("LIBRARIAN")) {
+        response.sendRedirect("index.html");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -24,7 +36,8 @@
       <!-- Main Panel -->
       <main class="main-panel">
         <header>
-          <h1>Welcome, Librarian</h1>
+          <h1>Welcome, <%= userName %>!</h1>
+          <p>Role: Librarian</p>
         </header>
 
         <section class="summary-cards">

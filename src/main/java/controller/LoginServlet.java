@@ -20,33 +20,40 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         response.setContentType("text/plain");
         String username = request.getParameter("userName");
         String password = request.getParameter("password");
 
         try {
-            // Get the datastore instance from MongoDBConfig
             var datastore = MongoDBConfig.getDatastore();
-            
-            // Find the user by username
             User user = datastore.find(User.class)
                     .filter(Filters.eq("userName", username))
                     .first();
-            
-            // Check if user exists and verify password
+
             if (user != null && PasswordUtils.verifyPassword(password, user.getPassword())) {
-                // Start a session and set user details and role in session
                 HttpSession session = request.getSession();
                 session.setAttribute("userId", user.getPersonId());
                 session.setAttribute("userName", user.getUserName());
                 session.setAttribute("role", user.getRole().name());
-                
-                // Set response status to indicate successful login
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().write("Login successful");
+
+                // Set session timeout to 5 minutes (300 seconds)
+                session.setMaxInactiveInterval(300);
+
+                String role = user.getRole().name();
+                // Handle role-based redirects
+                if ("LIBRARIAN".equals(role)) {
+                    response.sendRedirect("librarianDashboard.jsp");
+                } else if ("HOD".equals(role) || "DEAN".equals(role) || "MANAGER".equals(role)) {    
+                    response.sendRedirect("adminDashboard.jsp");
+                } else if ("TEACHER".equals(role)|| "STUDENT".equals(role)) {
+                    response.sendRedirect("memberDashboard.jsp");
+                } else {
+                    // Handle any other role that is not mapped
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write("Unauthorized role");
+                }
             } else {
-                // Invalid credentials
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("Invalid username or password");
             }
