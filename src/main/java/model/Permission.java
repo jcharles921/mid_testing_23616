@@ -10,6 +10,8 @@ public class Permission {
     private UUID permissionId;
     
     private String action; 
+    
+    // Define the enum for roles
     public enum RoleType {
         STUDENT,
         MANAGER,
@@ -19,10 +21,9 @@ public class Permission {
         LIBRARIAN
     }
 
-    @Reference
+    // Store allowed roles as a List of RoleType (instead of using @Reference)
     private List<RoleType> allowedRoles; 
 
- 
     // Constructors
     public Permission() {
         this.permissionId = UUID.randomUUID();

@@ -5,4 +5,8 @@
     <welcome-file>index.html</welcome-file>
  
   </welcome-file-list>
+  <session-config>
+    <session-timeout>5</session-timeout> <!-- 5 minutes -->
+</session-config>
+  
 </web-app>
