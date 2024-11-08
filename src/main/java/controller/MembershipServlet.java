@@ -19,7 +19,7 @@ public class MembershipServlet extends HttpServlet {
 
 	@Override
 	public void init() throws ServletException {
-		datastore = MongoDBConfig.getDatastore(); // Use MongoDBConfig to get Datastore
+		datastore = MongoDBConfig.getDatastore();
 	}
 
 	// Handles creating membership
@@ -43,7 +43,6 @@ public class MembershipServlet extends HttpServlet {
 				return;
 			}
 
-			// Find user and membership type using Filters
 			User user = datastore.find(User.class).filter(Filters.eq("_id", new ObjectId(userId))).first();
 			MembershipType membershipType = datastore.find(MembershipType.class)
 					.filter(Filters.eq("_id", new ObjectId(membershipTypeId))).first();
@@ -86,7 +85,7 @@ public class MembershipServlet extends HttpServlet {
 			Map<String, String> requestBody = mapper.readValue(req.getInputStream(), Map.class);
 
 			String membershipId = requestBody.get("membershipId");
-			String role = requestBody.get("role"); // Must be LIBRARIAN
+			String role = requestBody.get("role");
 
 			if (!Permission.RoleType.LIBRARIAN.name().equals(role)) {
 				resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -94,7 +93,6 @@ public class MembershipServlet extends HttpServlet {
 				return;
 			}
 
-			// Find membership by ID using Filters
 			Membership membership = datastore.find(Membership.class)
 					.filter(Filters.eq("_id", new ObjectId(membershipId))).first();
 
@@ -110,7 +108,6 @@ public class MembershipServlet extends HttpServlet {
 				return;
 			}
 
-			// Update membership status to APPROVED
 			membership.setMembershipStatus(Membership.MembershipStatus.APPROVED);
 			datastore.save(membership);
 
@@ -142,11 +139,8 @@ public class MembershipServlet extends HttpServlet {
 				return;
 			}
 
-			// Convert the string userId to UUID
 			UUID uuidUserId = UUID.fromString(userId);
 
-			// Now, find the User by UUID. Assuming the userId field is stored in a
-			// different field like `villageId`
 			User user = datastore.find(User.class).filter(Filters.eq("_id", uuidUserId)).first();
 
 			if (user == null) {
@@ -154,8 +148,6 @@ public class MembershipServlet extends HttpServlet {
 				out.write(mapper.writeValueAsString(Map.of("error", "User not found.")));
 				return;
 			}
-
-			// Find memberships associated with the user
 			List<Membership> membershipList = datastore.find(Membership.class).filter(Filters.eq("reader", user))
 					.iterator().toList();
 
@@ -168,7 +160,6 @@ public class MembershipServlet extends HttpServlet {
 		}
 	}
 
-	// Helper function to validate UUID
 	private boolean isValidUUID(String userId) {
 		try {
 			UUID.fromString(userId);

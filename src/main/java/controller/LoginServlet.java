@@ -36,12 +36,9 @@ public class LoginServlet extends HttpServlet {
                 session.setAttribute("userId", user.getPersonId());
                 session.setAttribute("userName", user.getUserName());
                 session.setAttribute("role", user.getRole().name());
-
-                // Set session timeout to 5 minutes (300 seconds)
                 session.setMaxInactiveInterval(300);
 
                 String role = user.getRole().name();
-                // Handle role-based redirects
                 if ("LIBRARIAN".equals(role)) {
                     response.sendRedirect("librarianDashboard.jsp");
                 } else if ("HOD".equals(role) || "DEAN".equals(role) || "MANAGER".equals(role)) {    
