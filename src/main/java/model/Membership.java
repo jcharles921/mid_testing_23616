@@ -23,7 +23,7 @@ public class Membership {
     private MembershipType membershipType; // Reference instead of Embedded
 
     public enum MembershipStatus {
-        APPROVED, REJECTED, PENDING
+        APPROVED, REJECTED, PENDING,EXPIRED
     }
 
     // Constructors, Getters, and Setters

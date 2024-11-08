@@ -1,15 +1,5 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%
-    // Get session attributes for user validation
-    String userName = (String) session.getAttribute("userName");
-    String role = (String) session.getAttribute("role");
-
-    // Validate that the role is "MEMBER" (Students or Teachers)
-    if (session == null || userName == null || role == null ) {
-        response.sendRedirect("index.html");
-        return;
-    }
-%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="java.text.SimpleDateFormat, java.util.Date" %>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -17,6 +7,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Member Dashboard</title>
     <link rel="stylesheet" href="./styles/member.css" />
+    <style>
+      /* Drawer Styles */
+      .drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 100%;
+        background-color: #f8f8f8;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: start;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+      }
+
+      .drawer-content {
+        margin-top: 20px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .drawer.open {
+        transform: translateX(0);
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        align-self: flex-end;
+        cursor: pointer;
+      }
+
+      .drawer h3 {
+        margin-top: 0;
+      }
+
+      #membership-request-form {
+        display: flex;
+        flex-direction: column;
+      }
+
+      #membership-request-form label,
+      #membership-request-form select,
+      #membership-request-form button {
+        margin-bottom: 10px;
+      }
+
+      #membership-request-form button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+
+      #membership-request-form button:hover {
+        background-color: #0056b3;
+      }
+    </style>
   </head>
   <body>
     <div class="dashboard">
@@ -35,16 +92,16 @@
       <!-- Main Panel -->
       <main class="main-panel">
         <header>
-          <h1>Welcome, <%= userName %>!</h1>
+          <h1>Welcome, <%= session.getAttribute("userName") %>!</h1>
         </header>
 
         <section class="summary-cards">
           <!-- Membership Status -->
           <div class="card" id="membership-status">
             <h3>Membership Details</h3>
-            <p><strong>Type:</strong> Gold</p> <!-- Replace with dynamic data -->
-            <p><strong>Expiration:</strong> 12/31/2024</p> <!-- Replace with dynamic data -->
-            <p><strong>Borrowing Limit:</strong> 10 books</p> <!-- Replace with dynamic data -->
+            <div id="membership-details">
+              <p>Loading membership details...</p>
+            </div>
           </div>
 
           <!-- Borrowed Books -->
@@ -58,17 +115,11 @@
                   <th>Fine</th>
                 </tr>
               </thead>
-              <tbody>
-                <!-- Example Data (Replace with dynamic values) -->
+              <tbody id="borrowed-books-list">
                 <tr>
-                  <td>The Great Gatsby</td>
-                  <td>11/15/2024</td>
-                  <td>$0</td>
-                </tr>
-                <tr>
-                  <td>1984</td>
-                  <td>11/20/2024</td>
-                  <td>$2</td>
+                  <td>Loading...</td>
+                  <td></td>
+                  <td></td>
                 </tr>
               </tbody>
             </table>
@@ -76,27 +127,122 @@
 
           <!-- Fines and Payments -->
           <div class="card" id="fines-payments">
-            <h3>Fines & Payments</h3>
-            <p><strong>Outstanding Fines:</strong> $2</p> <!-- Replace dynamically -->
-            <p><strong>Payment History:</strong></p>
-            <ul>
-              <!-- Example Payment History -->
-              <li>Paid $5 on 10/01/2024</li>
-              <li>Paid $3 on 09/15/2024</li>
-            </ul>
-          </div>
-
-          <!-- Search Books -->
-          <div class="card">
-            <h3>Search Books</h3>
-            <input
-              type="text"
-              placeholder="Search by title or category..."
-              class="search-bar"
-            />
+            <h3>Due Payments</h3>
+            <p>
+              <strong>Outstanding Fines:</strong>
+              <span id="outstanding-fines">Loading...</span> Rwf
+            </p>
           </div>
         </section>
       </main>
     </div>
+
+    <!-- Membership Request Drawer -->
+    <div id="membership-request-drawer" class="drawer hidden">
+      <div class="drawer-content">
+        <button class="close-btn" onclick="closeDrawer()">×</button>
+        <h3>Request Membership</h3>
+        <p>Fill out the form below to request a new membership.</p>
+        <form id="membership-request-form">
+          <label for="membership-type">Select Membership Type:</label>
+          <select id="membership-type" name="membershipType">
+            <option value="standard">Standard</option>
+            <option value="premium">Premium</option>
+          </select>
+          <button type="submit">Submit Request</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const userId = '<%= session.getAttribute("userId") %>';
+      const userName = '<%= session.getAttribute("userName") %>';
+
+      // Fetch and update data
+      fetchMembershipData(userId);
+
+      function fetchMembershipData(userId) {
+        fetch(`membership?userId=${userId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            updateMembershipDetails(data.memberships);
+            updateBorrowedBooks(data.borrowedBooks);
+            updateOutstandingFines(data.outstandingFines);
+          })
+          .catch((error) => {
+            console.error("Error fetching membership data:", error);
+          });
+      }
+
+      function updateMembershipDetails(memberships) {
+        const membershipDetails = document.getElementById("membership-details");
+
+        if (
+          memberships.length === 0 ||
+          memberships[0].membershipStatus === "EXPIRED"
+        ) {
+          membershipDetails.innerHTML = `
+            <p>You don't have an active membership or your membership has expired.</p>
+            <button onclick="requestMembership()">Request Membership</button>
+          `;
+        } else {
+          const membership = memberships[0];
+          const expirationDate = new Date(
+            membership.expiringTime
+          ).toLocaleDateString();
+          membershipDetails.innerHTML = `
+            <p><strong>Type:</strong> ${membership.membershipType.name}</p>
+            <p><strong>Expiration:</strong> ${expirationDate}</p>
+            <p><strong>Borrowing Limit:</strong> ${membership.membershipType.maxBooks} books</p>
+          `;
+        }
+      }
+
+      function updateBorrowedBooks(borrowedBooks) {
+        const booksList = document.getElementById("borrowed-books-list");
+        if (borrowedBooks.length === 0) {
+          booksList.innerHTML =
+            '<tr><td colspan="3">No borrowed books</td></tr>';
+        } else {
+          booksList.innerHTML = borrowedBooks
+            .map((book) => {
+              const dueDate = new Date(book.dueDate).toLocaleDateString();
+              return `
+                <tr>
+                  <td>${book.book.title}</td>
+                  <td>${dueDate}</td>
+                  <td>${book.fine} Rwf</td>
+                </tr>
+              `;
+            })
+            .join("");
+        }
+      }
+
+      function updateOutstandingFines(fines) {
+        document.getElementById("outstanding-fines").textContent = fines;
+      }
+
+      function requestMembership() {
+        const drawer = document.getElementById("membership-request-drawer");
+        drawer.classList.remove("hidden");
+        drawer.classList.add("open");
+      }
+
+      function closeDrawer() {
+        const drawer = document.getElementById("membership-request-drawer");
+        drawer.classList.remove("open");
+        setTimeout(() => drawer.classList.add("hidden"), 300);
+      }
+
+      document
+        .getElementById("membership-request-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          alert("Membership request submitted successfully.");
+          closeDrawer();
+        });
+    </script>
   </body>
 </html>
