@@ -61,6 +61,7 @@ public class AppContextListener implements ServletContextListener {
 									Permission.RoleType.HOD)),
 					new Permission("BORROW_BOOKS",
 							Arrays.asList(Permission.RoleType.STUDENT, Permission.RoleType.TEACHER)),
+					new Permission("CREATE_MEMBERSHIP", Arrays.asList(Permission.RoleType.STUDENT,Permission.RoleType.TEACHER)),
 					new Permission("APPROVE_MEMBERSHIP", Arrays.asList(Permission.RoleType.LIBRARIAN)),
 					new Permission("ASSIGN_BOOK_TO_SHELF", Arrays.asList(Permission.RoleType.LIBRARIAN)),
 					new Permission("ASSIGN_SHELF_TO_ROOM", Arrays.asList(Permission.RoleType.LIBRARIAN)),
@@ -71,6 +72,7 @@ public class AppContextListener implements ServletContextListener {
 					new Permission("CREATE_BOOK", Arrays.asList(Permission.RoleType.LIBRARIAN)),
 					new Permission("UPDATE_BOOK", Arrays.asList(Permission.RoleType.LIBRARIAN)),
 					new Permission("DELETE_BOOK", Arrays.asList(Permission.RoleType.LIBRARIAN)));
+			
 
 			datastore.save(permissions);
 			System.out.println("Permissions seeded successfully.");

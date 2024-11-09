@@ -1,6 +1,6 @@
 // Initial data and role
 const userRole = "LIBRARIAN";
-
+const tbody = document.getElementById("membership-table-body");
 // Tab functionality
 function showTab(tabId) {
   // Hide all tab contents
@@ -71,49 +71,90 @@ function fetchMembershipRequests() {
     })
     .then((memberships) => {
       const tbody = document.getElementById("membership-table-body");
+      tbody.innerHTML = ""; // Clear existing content
 
       if (!memberships || memberships.length === 0) {
-        tbody.innerHTML =
-          '<tr><td colspan="5">No membership requests found</td></tr>';
+        const noDataRow = document.createElement("tr");
+        const noDataCell = document.createElement("td");
+        noDataCell.colSpan = 6;
+        noDataCell.textContent = "No membership requests found";
+        noDataRow.appendChild(noDataCell);
+        tbody.appendChild(noDataRow);
         return;
       }
 
-      tbody.innerHTML = memberships
-        .map(
-          (membership) => `
-            <tr>
-              <td>${membership.reader.name || "N/A"}</td>
-              <td>${membership.reader.email || "N/A"}</td>
-              <td>${new Date(
-                membership.registrationDate
-              ).toLocaleDateString()}</td>
-              <td>${membership.membershipStatus}</td>
-              <td>
-                <button onclick="handleMembershipRequest('${
-                  membership.membershipId
-                }', 'accept')" 
-                        class="action-btn accept-btn">Accept</button>
-                <button onclick="handleMembershipRequest('${
-                  membership.membershipId
-                }', 'refuse')" 
-                        class="action-btn refuse-btn">Refuse</button>
-              </td>
-            </tr>
-          `
-        )
-        .join("");
+      memberships.forEach((membership) => {
+        const row = document.createElement("tr");
+
+        // Name cell
+        const nameCell = document.createElement("td");
+        nameCell.textContent = `${membership?.reader?.firstName || "Unknown"} ${
+          membership?.reader?.lastName || ""
+        }`;
+        row.appendChild(nameCell);
+
+        // Membership Type cell
+        const typeCell = document.createElement("td");
+        typeCell.textContent =
+          membership?.membershipType?.membershipName || "Unknown";
+        row.appendChild(typeCell);
+
+        // Registration Date cell
+        const regDateCell = document.createElement("td");
+        regDateCell.textContent = new Date(
+          membership?.registrationDate
+        ).toLocaleDateString();
+        row.appendChild(regDateCell);
+
+        // Expiration Date cell
+        const expDateCell = document.createElement("td");
+        expDateCell.textContent = new Date(
+          membership?.expiringTime
+        ).toLocaleDateString();
+        row.appendChild(expDateCell);
+
+        // Status cell
+        const statusCell = document.createElement("td");
+        statusCell.textContent = membership?.membershipStatus || "Unknown";
+        row.appendChild(statusCell);
+
+        // Actions cell
+        const actionsCell = document.createElement("td");
+        if (membership?.membershipStatus === "PENDING") {
+          const acceptButton = document.createElement("button");
+          acceptButton.textContent = "Accept";
+          acceptButton.className = "action-btn accept-btn";
+          acceptButton.onclick = () =>
+            handleMembershipRequest(membership?.membershipId, "accept");
+
+          const refuseButton = document.createElement("button");
+          refuseButton.textContent = "Refuse";
+          refuseButton.className = "action-btn refuse-btn";
+          refuseButton.onclick = () =>
+            handleMembershipRequest(membership?.membershipId, "refuse");
+
+          actionsCell.appendChild(acceptButton);
+          actionsCell.appendChild(refuseButton);
+        } else {
+          actionsCell.textContent = "No actions available";
+        }
+        row.appendChild(actionsCell);
+
+        tbody.appendChild(row);
+      });
     })
     .catch((error) => {
       console.error("Error fetching membership requests:", error);
-      document.getElementById("membership-table-body").innerHTML =
-        '<tr><td colspan="5">Error loading membership requests</td></tr>';
+      const tbody = document.getElementById("membership-table-body");
+      tbody.innerHTML =
+        '<tr><td colspan="6">Error loading membership requests</td></tr>';
     });
 }
 
 // Handle membership request (accept/refuse)
 function handleMembershipRequest(requestId, action) {
-  fetch("membership-requests", {
-    method: "POST",
+  fetch("membership", {
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },

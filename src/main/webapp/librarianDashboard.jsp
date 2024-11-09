@@ -113,6 +113,15 @@ session.getAttribute("role"); %>
 	background-color: #f44336;
 	color: white;
 }
+.logout-btn {
+          	margin-top:"50px";
+            color: #66a689;
+            padding: 8px 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
 </style>
 </head>
 <body>
@@ -124,12 +133,19 @@ session.getAttribute("role"); %>
 				<ul>
 					<li><a href="#" onclick="showTab('book-management')"
 						class="tab-link">Book Management</a></li>
+						<li><a href="#" onclick="showTab('borrows-management')"
+							class="tab-link">Borrows</a></li>
 					<li><a href="#" onclick="showTab('membership-management')"
 						class="tab-link">Membership Management</a></li>
 					<li><a href="#" onclick="showTab('shelf-rooms')"
 						class="tab-link">Shelfs and Rooms</a></li>
+
+					
 				</ul>
 			</nav>
+			<form action="logout" method="get">
+                <button type="submit" class="logout-btn">Logout</button>
+            </form>
 		</aside>
 
 		<!-- Main Panel -->
@@ -171,6 +187,32 @@ session.getAttribute("role"); %>
 					</table>
 				</div>
 			</div>
+			<!-- Borrows Section (New) -->
+			<div id="borrows-management" class="tab-content">
+				<div class="card">
+					<div class="section-header">
+						<h3>Book Borrowing Details</h3>
+					</div>
+					<table>
+						<thead>
+							<tr>
+								<th>Book Title</th>
+								<th>Reader</th>
+								<th>Pickup Date</th>
+								<th>Due Date</th>
+								<th>Return Date</th>
+								<th>Fine</th>
+								<th>Late Charges</th>
+							</tr>
+						</thead>
+						<tbody id="borrows-table-body">
+							<tr>
+								<td colspan="7">Loading borrowed books...</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
 
 			<!-- Membership Management Section -->
 			<div id="membership-management" class="tab-content">
@@ -182,8 +224,9 @@ session.getAttribute("role"); %>
 						<thead>
 							<tr>
 								<th>Name</th>
-								<th>Email</th>
+								<th>Membership type</th>
 								<th>Request Date</th>
+								<th>Expiration Date</th>
 								<th>Status</th>
 								<th>Actions</th>
 							</tr>

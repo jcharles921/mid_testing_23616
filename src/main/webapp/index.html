@@ -106,7 +106,7 @@
           <input
             type="text"
             id="username"
-            placeholder=" User Name"
+            placeholder="User Name"
             name="userName"
           />
           <div id="usernameError" class="error"></div>
@@ -129,48 +129,50 @@
         </div>
       </div>
     </div>
- <script>
-    // Get the input fields and error message elements
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    const usernameError = document.getElementById('usernameError');
-    const passwordError = document.getElementById('passwordError');
+    <script>
+      // Get the input fields and error message elements
+      const usernameInput = document.getElementById("username");
+      const passwordInput = document.getElementById("password");
+      const usernameError = document.getElementById("usernameError");
+      const passwordError = document.getElementById("passwordError");
 
-    // Add event listeners to the input fields
-    usernameInput.addEventListener('input', validateUsername);
-    passwordInput.addEventListener('input', validatePassword);
+      // Add event listeners to the input fields
+      usernameInput.addEventListener("input", validateUsername);
+      passwordInput.addEventListener("input", validatePassword);
 
-    // Validation functions
-    function validateUsername() {
-      if (usernameInput.value.trim() === '') {
-        usernameError.textContent = 'Please enter a username.';
-      } else {
-        usernameError.textContent = '';
+      // Validation functions
+      function validateUsername() {
+        if (usernameInput.value.trim() === "") {
+          usernameError.textContent = "Please enter a username.";
+        } else {
+          usernameError.textContent = "";
+        }
       }
-    }
 
-    function validatePassword() {
-      if (passwordInput.value.trim() === '') {
-        passwordError.textContent = 'Please enter a password.';
-      } else {
-        passwordError.textContent = '';
+      function validatePassword() {
+        if (passwordInput.value.trim() === "") {
+          passwordError.textContent = "Please enter a password.";
+        } else {
+          passwordError.textContent = "";
+        }
       }
-    }
 
-    function validateForm(event) {
-      event.preventDefault(); // Prevent the form from submitting
+      function validateForm(event) {
+        event.preventDefault(); // Prevent the form from submitting
 
-      // Validate the form fields
-      validateUsername();
-      validatePassword();
+        // Validate the form fields
+        validateUsername();
+        validatePassword();
 
-      // Check if there are any error messages
-      if (usernameError.textContent === '' && passwordError.textContent === '') {
-        // Submit the form if there are no errors
-        event.target.submit();
+        // Check if there are any error messages
+        if (
+          usernameError.textContent === "" &&
+          passwordError.textContent === ""
+        ) {
+          // Submit the form if there are no errors
+          event.target.submit();
+        }
       }
-    }
-  </script>
-
+    </script>
   </body>
 </html>

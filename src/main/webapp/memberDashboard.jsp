@@ -1,5 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
-pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
+pageEncoding="UTF-8" %> <% String userName = (String)
+session.getAttribute("userName"); String role = (String)
+session.getAttribute("role"); %> <%@ page import="java.util.*" %>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -37,6 +40,13 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
       .drawer.open {
         transform: translateX(0);
       }
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
 
       .close-btn {
         background: none;
@@ -65,6 +75,10 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
         cursor: pointer;
         border-radius: 5px;
       }
+      a {
+        text-decoration: none;
+        color: white;
+      }
 
       #membership-request-form button:hover {
         background-color: #0056b3;
@@ -84,6 +98,14 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
       .drawer-overlay.visible {
         display: block;
       }
+      .logout-btn {
+        margin-top: "50px";
+        color: #66a689;
+        padding: 8px 16px;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+      }
     </style>
   </head>
   <body>
@@ -92,29 +114,55 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
         <h2>Member Dashboard</h2>
         <nav>
           <ul>
-            <li><a href="#membership-status">My Membership</a></li>
-            <li><a href="#borrowed-books">Borrowed Books</a></li>
-            <li><a href="#fines-payments">Fines & Payments</a></li>
+            <li>
+              <a
+                href="#"
+                onclick="showTab('membership-details-tab')"
+                class="tab-link"
+                >Membership</a
+              >
+            </li>
+            <li>
+              <a
+                href="#"
+                onclick="showTab('borrowed-books-tab')"
+                class="tab-link"
+                >Borrowed Books</a
+              >
+            </li>
+            <li>
+              <a
+                href="#"
+                onclick="showTab('fines-payments-tab')"
+                class="tab-link"
+                >Fines & Payments</a
+              >
+            </li>
           </ul>
         </nav>
+        <form action="logout" method="get">
+          <button type="submit" class="logout-btn">Logout</button>
+        </form>
       </aside>
 
       <main class="main-panel">
         <header>
-          <h1>Welcome, ${userName != null ? userName : 'Guest'}!</h1>
+          <h1>Welcome, <%= userName %>!</h1>
         </header>
 
-        <section class="summary-cards">
-          <div class="card" id="membership-status">
+        <!-- Membership Details -->
+        <div id="membership-details-tab" class="tab-content active">
+          <div class="card">
             <h3>Membership Details</h3>
-            <div id="membership-details">
-              <p>Loading membership details...</p>
-            </div>
+            <div id="membership-details">Loading...</div>
           </div>
+        </div>
 
-          <div class="card" id="borrowed-books">
+        <!-- Borrowed Books -->
+        <div id="borrowed-books-tab" class="tab-content">
+          <div class="card">
             <h3>Borrowed Books</h3>
-            <table>
+            <table class="styled-table">
               <thead>
                 <tr>
                   <th>Title</th>
@@ -129,16 +177,20 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
               </tbody>
             </table>
           </div>
+        </div>
 
-          <div class="card" id="fines-payments">
+        <!-- Fines & Payments -->
+        <div id="fines-payments-tab" class="tab-content">
+          <div class="card">
             <h3>Due Payments</h3>
             <p>
               <strong>Outstanding Fines:</strong>
               <span id="outstanding-fines">Loading...</span> Rwf
             </p>
           </div>
-        </section>
+        </div>
       </main>
+      >
     </div>
 
     <!-- Membership Request Drawer -->
@@ -149,10 +201,10 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
         <h3>Request Membership</h3>
         <form id="membership-request-form">
           <label for="membership-type">Select Membership Type:</label>
-          <select id="membership-type" name="membershipType">
-            <option value="">Loading membership types...</option>
-          </select>
-          <button type="submit">Submit Request</button>
+          <select id="membership-type" name="membershipType"></select>
+          <button onclick="sumbitMembership()" type="submit">
+            Submit Request
+          </button>
         </form>
       </div>
     </div>
@@ -161,6 +213,8 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
       // Get user data from JSP safely
       const userId = '${userId != null ? userId : ""}';
       const userName = '${userName != null ? userName : "Guest"}';
+      const role = '${role != null ? role : ""}';
+      const select = document.getElementById("membership-type");
       function fetchMembershipData(userId) {
         if (!userId) {
           handleError("User ID is missing");
@@ -175,9 +229,7 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
             return response.json();
           })
           .then((data) => {
-            updateMembershipDetails(data?.memberships);
-            updateBorrowedBooks(data?.borrowedBooks);
-            // updateOutstandingFines(data?.outstandingFines);
+            updateMembershipDetails(data);
           })
           .catch((error) => {
             console.error("Error fetching data:", error);
@@ -189,40 +241,87 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
         if (!membershipDetails) return;
 
         try {
+          // Clear existing content
+          membershipDetails.innerHTML = "";
+
           if (!memberships || memberships.length === 0) {
-            membershipDetails.innerHTML = `
-                        <p>No membership information available.</p>
-                        <button onclick="requestMembership()">Request Membership</button>
-                    `;
+            const noMembershipText = document.createElement("p");
+            noMembershipText.textContent =
+              "No membership information available.";
+            membershipDetails.appendChild(noMembershipText);
+
+            const requestButton = document.createElement("button");
+            requestButton.textContent = "Request Membership";
+            requestButton.onclick = requestMembership;
+            membershipDetails.appendChild(requestButton);
             return;
           }
 
-          const membership = memberships[0];
-          if (!membership || membership.membershipStatus === "EXPIRED") {
-            membershipDetails.innerHTML = `
-                        <p>Your membership has expired.</p>
-                        <button onclick="requestMembership()">Renew Membership</button>
-                    `;
+          // Sort memberships by registrationDate in descending order
+          memberships.sort((a, b) => b.registrationDate - a.registrationDate);
+
+          // Get the latest membership
+          const latestMembership = memberships[0];
+
+          // Check if the latest membership is APPROVED
+          if (latestMembership.membershipStatus !== "APPROVED") {
+            const statusText = document.createElement("p");
+            statusText.textContent = "Your latest membership is not approved.";
+            membershipDetails.appendChild(statusText);
+
+            const newRequestButton = document.createElement("button");
+            newRequestButton.textContent = "Request New Membership";
+            newRequestButton.onclick = requestMembership;
+            membershipDetails.appendChild(newRequestButton);
             return;
           }
 
-          const membershipType = membership.membershipType
-            ? membership.membershipType.name
-            : "Standard";
-          const expirationDate = membership.expiringTime
-            ? new Date(membership.expiringTime).toLocaleDateString()
+          const membershipType = latestMembership.membershipType
+            ? latestMembership.membershipType.membershipName
+            : "Not specified";
+          const expirationDate = latestMembership.expiringTime
+            ? new Date(latestMembership.expiringTime).toLocaleDateString()
             : "Not specified";
 
-          membershipDetails.innerHTML = `
-                    <p><strong>Type:</strong> ${membershipType}</p>
-                    <p><strong>Expiration:</strong> ${expirationDate}</p>
-                `;
+          // Create and append type information
+          const typeElement = document.createElement("p");
+          const typeStrong = document.createElement("strong");
+          typeStrong.textContent = "Type: ";
+          typeElement.appendChild(typeStrong);
+          typeElement.appendChild(document.createTextNode(membershipType));
+          membershipDetails.appendChild(typeElement);
+
+          // Create and append expiration information
+          const expirationElement = document.createElement("p");
+          const expirationStrong = document.createElement("strong");
+          expirationStrong.textContent = "Expiration: ";
+          expirationElement.appendChild(expirationStrong);
+          expirationElement.appendChild(
+            document.createTextNode(expirationDate)
+          );
+          membershipDetails.appendChild(expirationElement);
+
+          // Create and append status information
+          const statusElement = document.createElement("p");
+          const statusStrong = document.createElement("strong");
+          statusStrong.textContent = "Status: ";
+          statusElement.appendChild(statusStrong);
+          statusElement.appendChild(
+            document.createTextNode(latestMembership.membershipStatus)
+          );
+          membershipDetails.appendChild(statusElement);
         } catch (error) {
           console.error("Error updating membership details:", error);
-          membershipDetails.innerHTML = `
-                    <p>Error loading membership information.</p>
-                    <button onclick="fetchMembershipData('${userId}')">Retry</button>
-                `;
+          membershipDetails.innerHTML = ""; // Clear existing content
+
+          const errorText = document.createElement("p");
+          errorText.textContent = "Error loading membership information.";
+          membershipDetails.appendChild(errorText);
+
+          const retryButton = document.createElement("button");
+          retryButton.textContent = "Retry";
+          retryButton.onclick = () => fetchMembershipData(userId);
+          membershipDetails.appendChild(retryButton);
         }
       }
 
@@ -233,10 +332,10 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
         try {
           if (!books || books.length === 0) {
             booksList.innerHTML = `
-                        <tr>
-                            <td colspan="3">No books currently borrowed</td>
-                        </tr>
-                    `;
+                          <tr>
+                              <td colspan="3">No books currently borrowed</td>
+                          </tr>
+                      `;
             return;
           }
 
@@ -250,25 +349,26 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
               const fine = book && book.fine ? `${book.fine} Rwf` : "0 Rwf";
 
               return `
-                        <tr>
-                            <td>${title}</td>
-                            <td>${dueDate}</td>
-                            <td>${fine}</td>
-                        </tr>
-                    `;
+                          <tr>
+                              <td>${title}</td>
+                              <td>${dueDate}</td>
+                              <td>${fine}</td>
+                          </tr>
+                      `;
             })
             .join("");
         } catch (error) {
           console.error("Error updating borrowed books:", error);
           booksList.innerHTML = `
-                    <tr>
-                        <td colspan="3">Error loading borrowed books</td>
-                    </tr>
-                `;
+                      <tr>
+                          <td colspan="3">Error loading borrowed books</td>
+                      </tr>
+                  `;
         }
       }
 
       function requestMembership() {
+        openDrawer();
         fetch("membership/types")
           .then((response) => {
             if (!response.ok) {
@@ -277,23 +377,16 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
             return response.json();
           })
           .then((types) => {
+            console.log("Membership types:", types);
             if (!types || types.length === 0) {
               throw new Error("No membership types available");
             }
-
-            const select = document.getElementById("membership-type");
-            if (!select) return;
-
-            select.innerHTML = types
-              .map((type) => {
-                const typeId = type ? type._id || "" : "";
-                const typeName = type
-                  ? type.name || "Unknown Type"
-                  : "Unknown Type";
-                return `<option value="${typeId}">${typeName}</option>`;
-              })
-              .join("");
-            openDrawer();
+            for (let i = 0; i < types.length; i++) {
+              const option = document.createElement("option");
+              option.value = types[i].membershipTypeId;
+              option.textContent = types[i].membershipName;
+              select.appendChild(option);
+            }
           })
           .catch((error) => {
             console.error("Error fetching membership types:", error);
@@ -305,11 +398,11 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
       function handleError(message) {
         // You can customize this function to show errors in a user-friendly way
         const errorMessage = `
-        <div class="error-message">
-            <p>${message}</p>
-            <button onclick="fetchMembershipData('${userId}')">Retry</button>
-        </div>
-    `;
+          <div class="error-message">
+              <p>${message}</p>
+              <button onclick="fetchMembershipData('${userId}')">Retry</button>
+          </div>
+      `;
 
         // Update each section with error state
         const sections = [
@@ -366,13 +459,13 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
         if (form) {
           form.addEventListener("submit", function (event) {
             event.preventDefault();
+            fetchMembershipData(userId);
             alert("Membership request submitted.");
             closeDrawer();
           });
         }
 
         // Initial data fetch
-        fetchMembershipData(userId);
       });
       // Initial data fetch
       document.addEventListener("DOMContentLoaded", () => {
@@ -382,6 +475,74 @@ pageEncoding="UTF-8" %> <%@ page import="java.util.*" %>
           handleError("User ID is missing");
         }
       });
+      // Utility function for switching tabs
+      function showTab(tabId) {
+        // Remove 'active' class from all tabs
+        document.querySelectorAll(".tab-content").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+
+        // Add 'active' class to the selected tab
+        const selectedTab = document.getElementById(tabId);
+        if (selectedTab) {
+          selectedTab.classList.add("active");
+        } else {
+          console.error(`Tab with ID ${tabId} not found.`);
+        }
+
+        // Prevent default behavior of the anchor tag
+        return false;
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Set default active tab on page load
+        showTab("membership-details-tab");
+
+        // Attach click event listeners to tab links
+        document.querySelectorAll(".tab-link").forEach((link) => {
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            const tabId = link.getAttribute("onclick").match(/'(.*?)'/)[1];
+            showTab(tabId);
+          });
+        });
+
+        // Initial data fetch
+        if (userId) {
+          fetchMembershipData(userId);
+        } else {
+          handleError("User ID is missing");
+        }
+      });
+
+      function sumbitMembership() {
+        console.log("Submitting membership request...");
+
+        const membershipTypeId =
+          document.getElementById("membership-type").value;
+
+        fetch("membership", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: userId, // Safe userId from server-side
+            membershipTypeId: membershipTypeId,
+            role: role,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) throw new Error("Failed to submit membership");
+            return response.json();
+          })
+          .then((data) => {
+            alert(`Request successful: ${data.message}`);
+            closeDrawer();
+            fetchMembershipData(userId);
+          })
+          .catch((err) => handleError(err.message));
+      }
     </script>
   </body>
 </html>
