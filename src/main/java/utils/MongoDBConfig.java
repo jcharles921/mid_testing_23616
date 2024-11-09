@@ -29,7 +29,7 @@ public class MongoDBConfig {
             MongoClient mongoClient = MongoClients.create(settings);
             datastore = Morphia.createDatastore(mongoClient, DATABASE_NAME);
             datastore.getMapper().mapPackage("model");
-            datastore.ensureIndexes();
+            datastore.ensureIndexes();	
             System.out.println("MongoDB connection established successfully");
         } catch (Exception e) {
             System.out.println("Error connecting to MongoDB: " + e.getMessage());
