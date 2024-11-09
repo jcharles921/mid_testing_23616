@@ -23,6 +23,7 @@ public class Permission {
 	        LIBRARIAN,
 	        SYSTEM 
 	    }
+	    public Permission() { }
     // Constructors
 	    public Permission(String action, List<RoleType> allowedRoles) {
 	        this.permissionId = UUID.randomUUID();

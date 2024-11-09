@@ -1,5 +1,5 @@
 // Initial data and role
-const userRole = "<%= role %>";
+const userRole = "LIBRARIAN";
 
 // Tab functionality
 function showTab(tabId) {
@@ -23,26 +23,34 @@ function fetchBooks() {
     .then((response) => response.json())
     .then((books) => {
       const tbody = document.getElementById("books-table-body");
+
       if (!books || books.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6">No books available</td></tr>';
         return;
       }
 
       tbody.innerHTML = books
-        ?.map(
-          (book) => `
-            <tr>
-              <td>${book.title}</td>
-              <td>${book.edition}</td>
-              <td>${book.ISBNCode}</td>
-              <td>${book.publisherName}</td>
-              <td>${book.bookStatus}</td>
-              <td>
-                <button onclick="deleteBook('${book.bookId}')" class="action-btn delete-btn">Delete</button>
-              </td>
-            </tr>
-          `
-        )
+        .map((book) => {
+          // Safely access nested properties
+          const roomCode = book?.shelf?.room?.roomCode || "Unassigned";
+          const bookCategory = book?.shelf?.bookCategory || "Uncategorized";
+          const publisherName = book?.publisherName || "Unknown";
+          const bookStatus = book?.bookStatus || "Unknown";
+
+          return `
+          <tr>
+            <td>${book?.title || "Untitled"}</td>
+            <td>${bookCategory}</td>
+            <td>${roomCode}</td>
+            <td>${publisherName}</td>
+            <td>${bookStatus}</td>
+            <td>
+              <button onclick="deleteBook('${book?.bookId}')" 
+                      class="action-btn delete-btn">Delete</button>
+            </td>
+          </tr>
+        `;
+        })
         .join("");
     })
     .catch((error) => {
@@ -54,31 +62,39 @@ function fetchBooks() {
 
 // Fetch and display membership requests
 function fetchMembershipRequests() {
-  fetch("membership-requests")
-    .then((response) => response.json())
-    .then((requests) => {
+  fetch(`membership/all?role=LIBRARIAN`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to fetch membership requests.");
+      }
+      return response.json();
+    })
+    .then((memberships) => {
       const tbody = document.getElementById("membership-table-body");
-      if (!requests || requests.length === 0) {
+
+      if (!memberships || memberships.length === 0) {
         tbody.innerHTML =
-          '<tr><td colspan="5">No pending membership requests</td></tr>';
+          '<tr><td colspan="5">No membership requests found</td></tr>';
         return;
       }
 
-      tbody.innerHTML = requests
+      tbody.innerHTML = memberships
         .map(
-          (request) => `
+          (membership) => `
             <tr>
-              <td>${request.name}</td>
-              <td>${request.email}</td>
-              <td>${new Date(request.requestDate).toLocaleDateString()}</td>
-              <td>${request.status}</td>
+              <td>${membership.reader.name || "N/A"}</td>
+              <td>${membership.reader.email || "N/A"}</td>
+              <td>${new Date(
+                membership.registrationDate
+              ).toLocaleDateString()}</td>
+              <td>${membership.membershipStatus}</td>
               <td>
                 <button onclick="handleMembershipRequest('${
-                  request.id
+                  membership.membershipId
                 }', 'accept')" 
                         class="action-btn accept-btn">Accept</button>
                 <button onclick="handleMembershipRequest('${
-                  request.id
+                  membership.membershipId
                 }', 'refuse')" 
                         class="action-btn refuse-btn">Refuse</button>
               </td>
@@ -209,6 +225,8 @@ document.addEventListener("DOMContentLoaded", () => {
       ISBNCode: form.ISBNCode.value,
       publisherName: form.publisherName.value,
       publicationYear: form.publicationYear.value,
+      shelfId: form.shelfId.value,
+      role: "LIBRARIAN",
     };
     addBook(formData);
   });
@@ -231,20 +249,33 @@ function fetchShelves() {
         .map(
           (shelf) => `
     <tr>
-      <td>${shelf.name}</td>
-      <td>${shelf.roomName || "Unassigned"}</td>
+      <td>${shelf?.bookCategory}</td>
+      <td>${shelf?.room?.roomCode || "Unassigned"}</td>
+      <td>${shelf?.availableStock}</td>
       <td>
         <button onclick="openAssignRoomDrawer('${
-          shelf.id
+          shelf?.shelfId
         }')" class="action-btn accept-btn">Assign Room</button>
         <button onclick="deleteShelf('${
-          shelf.id
+          shelf?.shelfId
         }')" class="action-btn delete-btn">Delete</button>
       </td>
     </tr>
   `
         )
         .join("");
+      const shelfSelect = document.getElementById("shelfId");
+      shelfSelect.innerHTML =
+        '<option value="">Select a shelf category</option>' +
+        shelves
+          .map(
+            (shelf) => `
+                <option value="${shelf.shelfId}">
+                    ${shelf.bookCategory} (Available: ${shelf.availableStock})
+                </option>
+            `
+          )
+          .join("");
     })
     .catch((error) => {
       console.error("Error fetching shelves:", error);
@@ -265,14 +296,52 @@ function openAssignRoomDrawer(shelfId) {
 }
 
 // Populate room select options
+// Fixed populateRoomSelect function
 function populateRoomSelect() {
   fetch("rooms")
     .then((response) => response.json())
     .then((rooms) => {
+      // First check if rooms exists and is an array
+      if (!Array.isArray(rooms)) {
+        console.error("Expected rooms to be an array, got:", rooms);
+        return;
+      }
+
       const select = document.getElementById("roomSelect");
-      select.innerHTML = rooms
-        .map((room) => `<option value="${room.id}">${room.name}</option>`)
-        .join("");
+      const roomSelect = document.getElementById("roomId");
+
+      // Check if both select elements exist
+      if (!select || !roomSelect) {
+        console.error("Could not find one or both select elements");
+        return;
+      }
+
+      // Clear existing options first
+      select.innerHTML = '<option value="">Select a room</option>';
+      roomSelect.innerHTML = '<option value="">Select a room</option>';
+
+      // Add new options
+      rooms.forEach((room) => {
+        // Verify room object has required properties
+        if (!room || !room.roomId || !room.roomCode) {
+          console.warn("Invalid room object:", room);
+          return;
+        }
+
+        // Add option to first select
+        select.innerHTML += `
+          <option value="${room.roomId}">
+            ${room.roomCode}
+          </option>
+        `;
+
+        // Add option to second select
+        roomSelect.innerHTML += `
+          <option value="${room.roomId}">
+            ${room.roomCode}
+          </option>
+        `;
+      });
     })
     .catch((error) => {
       console.error("Error fetching rooms:", error);
@@ -281,8 +350,8 @@ function populateRoomSelect() {
 
 // Assign room to shelf
 function assignRoomToShelf(shelfId, roomId) {
-  fetch("assign-room", {
-    method: "POST",
+  fetch("rooms", {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ shelfId, roomId }),
   })
@@ -312,6 +381,7 @@ function openAddRoomDrawer() {
   };
 
   openDrawer("add-room-drawer");
+  populateRoomSelect();
 }
 
 // Add room
@@ -364,12 +434,14 @@ document
     event.preventDefault();
 
     const shelfData = {
-      shelfName: event.target.shelfName.value,
+      // shelfName: event.target.shelfName.value,
       bookCategory: event.target.bookCategory.value,
       initialStock: parseInt(event.target.initialStock.value, 10),
       borrowedNumber: parseInt(event.target.borrowedNumber.value, 10),
       availableStock: parseInt(event.target.availableStock.value, 10),
-      roomId: event.target.roomId.value,
+      room: {
+        roomId: event.target.roomId.value,
+      },
     };
 
     addShelf(shelfData);
@@ -398,17 +470,27 @@ function addShelf(shelfData) {
 }
 
 function updateShelfList() {
-  const shelfList = document.getElementById("shelf-list");
+  const shelfList = document.getElementById("shelf-table-body");
   if (shelves.length === 0) {
     shelfList.innerHTML = "<li>No shelves added yet</li>";
   } else {
     shelfList.innerHTML = shelves
       .map(
         (shelf) => `
-        <li>
-          ${shelf.shelfName} (Capacity: ${shelf.shelfCapacity})
-          <button onclick="deleteShelf('${shelf.id}')">Delete</button>
-        </li>`
+    <tr>
+      <td>${shelf?.bookCategory}</td>
+      <td>${shelf?.room?.roomCode || "Unassigned"}</td>
+      <td>${shelf?.availableStock}</td>
+      <td>
+        <button onclick="openAssignRoomDrawer('${
+          shelf?.shelfId
+        }')" class="action-btn accept-btn">Assign Room</button>
+        <button onclick="deleteShelf('${
+          shelf?.shelfId
+        }')" class="action-btn delete-btn">Delete</button>
+      </td>
+    </tr>
+  `
       )
       .join("");
   }
@@ -472,15 +554,33 @@ function fetchRooms() {
     .then((response) => response.json())
     .then((rooms) => {
       const roomSelect = document.getElementById("roomId");
-      console.log(rooms)
+      console.log(rooms);
       rooms.forEach((room) => {
         const option = document.createElement("option");
-        option.value = room.roomId; 
-        option.textContent = `${room.roomCode}`; 
+        option.value = room.roomId;
+        option.textContent = `${room.roomCode}`;
         roomSelect.appendChild(option);
       });
     })
     .catch((error) => console.error("Failed to fetch rooms:", error));
+}
+function deleteShelf(shelfId) {
+  if (!confirm("Are you sure you want to delete this shelf?")) return;
+
+  fetch(`shelves?shelfId=${shelfId}`, { method: "DELETE" })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.error) {
+        alert(data.error);
+      } else {
+        alert("Shelf deleted successfully");
+        fetchShelves(); // Refresh the shelf list after deletion
+      }
+    })
+    .catch((error) => {
+      console.error("Error deleting shelf:", error);
+      alert("Error deleting shelf");
+    });
 }
 
 // Fetch shelves on page load

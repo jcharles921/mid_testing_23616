@@ -163,6 +163,7 @@ public class MembershipServlet extends HttpServlet {
 			out.write(mapper.writeValueAsString(Map.of("error", e.getMessage())));
 		}
 	}
+	
 	private boolean isValidRole(String role) {
 		return Permission.RoleType.TEACHER.name().equals(role) || Permission.RoleType.STUDENT.name().equals(role);
 	}

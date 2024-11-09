@@ -46,8 +46,19 @@ public class ShelfServlet extends HttpServlet {
 
         try {
             Shelf shelf = mapper.readValue(req.getReader(), Shelf.class);
-            datastore.save(shelf);
 
+            // Handle roomId manually if provided
+            String roomId = req.getParameter("roomId");
+            if (roomId != null) {
+                Room room = datastore.find(Room.class).filter(Filters.eq("_id", UUID.fromString(roomId))).first();
+                if (room != null) {
+                    shelf.setRoom(room);
+                } else {
+                    throw new IllegalArgumentException("Room not found with provided roomId.");
+                }
+            }
+
+            datastore.save(shelf);
             resp.setStatus(HttpServletResponse.SC_CREATED);
             out.write(mapper.writeValueAsString(shelf));
         } catch (Exception e) {
@@ -55,6 +66,7 @@ public class ShelfServlet extends HttpServlet {
             out.write(mapper.writeValueAsString(Map.of("error", e.getMessage())));
         }
     }
+
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {

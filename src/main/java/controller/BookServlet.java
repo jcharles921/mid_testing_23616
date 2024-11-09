@@ -11,6 +11,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.*;
 import org.bson.types.ObjectId;
 
@@ -25,38 +27,87 @@ public class BookServlet extends HttpServlet {
 
     // Create a new book
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json");
-        PrintWriter out = resp.getWriter();
         ObjectMapper mapper = new ObjectMapper();
+        PrintWriter out = resp.getWriter();
 
         try {
-            Map<String, String> requestBody = mapper.readValue(req.getInputStream(), Map.class);
+            // Parse the request body into a Map
+            Map<String, String> requestBody = mapper.readValue(req.getReader(), Map.class);
+
+            // Check if the required fields are present
             String role = requestBody.get("role");
-            // Check permission
+            String shelfId = requestBody.get("shelfId");
+            if (role == null || shelfId == null || role.isEmpty() || shelfId.isEmpty()) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.write(mapper.writeValueAsString(Collections.singletonMap("error", "Missing required parameters")));
+                return;
+            }
             if (!hasPermission(role, "CREATE_BOOK")) {
                 resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                out.write(mapper.writeValueAsString(Map.of("error", "You do not have permission to manage books.")));
+                out.write(mapper.writeValueAsString(Collections.singletonMap("error", "You do not have permission to manage books.")));
+                return;
+            }
+            Shelf shelf = datastore.find(Shelf.class)
+                    .filter(Filters.eq("_id", UUID.fromString(shelfId)))
+                    .first();
+
+            if (shelf == null) {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.write(mapper.writeValueAsString(Collections.singletonMap("error", "Shelf not found")));
                 return;
             }
 
+            // Create a new book from the request body
             Book book = new Book();
             book.setTitle(requestBody.get("title"));
-            book.setEdition(Integer.parseInt(requestBody.get("edition")));
+            book.setEdition(Integer.parseInt(requestBody.getOrDefault("edition", "1")));
             book.setISBNCode(requestBody.get("ISBNCode"));
-            book.setPublicationYear(new Date(requestBody.get("publicationYear")));
+          
+            try {
+                String publicationYearStr = requestBody.get("publicationYear");
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                Date publicationDate = dateFormat.parse(publicationYearStr);
+                book.setPublicationYear(publicationDate);
+            } catch (ParseException e) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.write(mapper.writeValueAsString(Collections.singletonMap("error", "Invalid publication year format")));
+                return;
+            }
+            
             book.setPublisherName(requestBody.get("publisherName"));
             book.setBookStatus(Book.BookStatus.AVAILABLE);
+            book.setShelf(shelf);
 
+            // Update shelf stock
+            shelf.setAvailableStock(shelf.getAvailableStock() + 1);
+
+            // Save the book and shelf
             datastore.save(book);
+            datastore.save(shelf);
 
+            // Create response map with null checks
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Book created successfully");
+            response.put("bookId", book.getBookId() != null ? book.getBookId().toString() : "");
+            response.put("shelfAvailableStock", shelf.getAvailableStock());
+
+            // Respond with the created book and updated shelf stock
             resp.setStatus(HttpServletResponse.SC_CREATED);
-            out.write(mapper.writeValueAsString(Map.of("message", "Book created successfully", "bookId", book.getBookId())));
+            out.write(mapper.writeValueAsString(response));
+            
+        } catch (IllegalArgumentException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.write(mapper.writeValueAsString(Collections.singletonMap("error", "Invalid UUID format for shelf ID")));
         } catch (Exception e) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            out.write(mapper.writeValueAsString(Map.of("error", e.getMessage())));
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.write(mapper.writeValueAsString(Collections.singletonMap("error", e.getMessage() != null ? e.getMessage() : "An error occurred")));
         }
     }
+
+
+
 
     // Update a book
     @Override
@@ -71,7 +122,7 @@ public class BookServlet extends HttpServlet {
             String bookId = requestBody.get("bookId");
 
             // Check permission
-            if (!hasPermission(role, "MANAGE_BOOKS")) {
+            if (!hasPermission(role, "CREATE_BOOK")) {
                 resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 out.write(mapper.writeValueAsString(Map.of("error", "You do not have permission to manage books.")));
                 return;
@@ -111,7 +162,7 @@ public class BookServlet extends HttpServlet {
             String bookId = requestBody.get("bookId");
 
             // Check permission
-            if (!hasPermission(role, "MANAGE_BOOKS")) {
+            if (!hasPermission(role, "DELETE_BOOK")) {
                 resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 out.write(mapper.writeValueAsString(Map.of("error", "You do not have permission to delete books.")));
                 return;

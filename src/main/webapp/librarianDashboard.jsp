@@ -156,8 +156,8 @@ session.getAttribute("role"); %>
 						<thead>
 							<tr>
 								<th>Title</th>
-								<th>Edition</th>
-								<th>ISBN</th>
+								<th>Shelf</th>
+								<th>Room</th>
 								<th>Publisher</th>
 								<th>Status</th>
 								<th>Actions</th>
@@ -214,8 +214,9 @@ session.getAttribute("role"); %>
 					<table>
 						<thead>
 							<tr>
-								<th>Shelf Name</th>
+								<th>Category</th>
 								<th>Assigned Room</th>
+								<th>available Stock	</th>
 								<th>Actions</th>
 							</tr>
 						</thead>
@@ -236,15 +237,15 @@ session.getAttribute("role"); %>
 		<div class="drawer-content">
 			<button class="close-btn" onclick="closeDrawer()">×</button>
 			<h3>Add New Book</h3>
-			<form id="add-book-form">
-				<input type="text" id="title" name="title" placeholder="Book Title"
-					required /> <input type="number" id="edition"
-					name="edition" placeholder="Edition" required /> <input
-					type="text" id="ISBNCode" name="ISBNCode" placeholder="ISBN Code"
-					required /> <input type="text" id="publisherName"
-					name="publisherName" placeholder="Publisher Name" required />
-				<input type="date" id="publicationYear" name="publicationYear"
-					required />
+			<form id="add-book-form" class="form-container">
+				<input type="text" id="title" name="title" placeholder="Book Title" required />
+				<input type="number" id="edition" name="edition" placeholder="Edition" required />
+				<input type="text" id="ISBNCode" name="ISBNCode" placeholder="ISBN Code" required />
+				<input type="text" id="publisherName" name="publisherName" placeholder="Publisher Name" required />
+				<input type="date" id="publicationYear" name="publicationYear" required />
+				<select id="shelfId" name="shelfId" required>
+					<option value="">Select a shelf category</option>
+				</select>
 				<button type="submit">Add Book</button>
 			</form>
 		</div>
@@ -282,13 +283,6 @@ session.getAttribute("role"); %>
     <button class="close-btn" onclick="closeDrawer()">×</button>
     <h3>Add Shelf</h3>
     <form id="add-shelf-form">
-      <input
-        type="text"
-        id="shelfName"
-        name="shelfName"
-        placeholder="Shelf Name"
-        required
-      />
       <input
         type="text"
         id="bookCategory"
