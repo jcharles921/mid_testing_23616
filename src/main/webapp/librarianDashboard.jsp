@@ -11,7 +11,6 @@ session.getAttribute("role"); %>
 <title>Librarian Dashboard</title>
 <link rel="stylesheet" href="./styles/librarian.css" />
 <style>
-/* Existing styles */
 .drawer {
 	position: fixed;
 	top: 0;
@@ -218,7 +217,7 @@ session.getAttribute("role"); %>
 			<div id="membership-management" class="tab-content">
 				<div class="card">
 					<div class="section-header">
-						<h3>Membership Requests</h3>
+						<h3>Membe	rship Requests</h3>
 					</div>
 					<table>
 						<thead>

@@ -94,6 +94,10 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
         display: none;
         z-index: 999;
       }
+      .borrow-btn {
+        background-color: #66a689;
+        color: white;
+      }
 
       .drawer-overlay.visible {
         display: block;
@@ -161,21 +165,54 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
         <!-- Borrowed Books -->
         <div id="borrowed-books-tab" class="tab-content">
           <div class="card">
-            <h3>Borrowed Books</h3>
-            <table class="styled-table">
+            <div class="section-header">
+              <h3>Available Books</h3>
+            </div>
+            <table>
               <thead>
                 <tr>
                   <th>Title</th>
-                  <th>Due Date</th>
-                  <th>Fine</th>
+                  <th>Shelf</th>
+                  <th>Room</th>
+                  <th>Publisher</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="borrowed-books-list">
+              <tbody id="books-table-body">
                 <tr>
-                  <td colspan="3">Loading...</td>
+                  <td colspan="6">Loading books...</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <br />
+          <br />
+          <br />
+          <div id="borrows-management">
+            <div class="card">
+              <div class="section-header">
+                <h3>Book Borrowing Details</h3>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Book Title</th>
+                    <th>Reader</th>
+                    <th>Pickup Date</th>
+                    <th>Due Date</th>
+                    <th>Return Date</th>
+                    <th>Fine</th>
+                    <th>Late Charges</th>
+                  </tr>
+                </thead>
+                <tbody id="borrows-table-body">
+                  <tr>
+                    <td colspan="7">Loading borrowed books...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -290,8 +327,6 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
           typeElement.appendChild(typeStrong);
           typeElement.appendChild(document.createTextNode(membershipType));
           membershipDetails.appendChild(typeElement);
-
-          // Create and append expiration information
           const expirationElement = document.createElement("p");
           const expirationStrong = document.createElement("strong");
           expirationStrong.textContent = "Expiration: ";
@@ -396,7 +431,6 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
 
       // ... rest of your JavaScript functions (fetchMembershipData, handleError, drawer functions) ...
       function handleError(message) {
-        // You can customize this function to show errors in a user-friendly way
         const errorMessage = `
           <div class="error-message">
               <p>${message}</p>
@@ -404,7 +438,6 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
           </div>
       `;
 
-        // Update each section with error state
         const sections = [
           "membership-details",
           "borrowed-books-list",
@@ -424,7 +457,6 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
         });
       }
 
-      // Utility function for drawer
       function openDrawer() {
         const overlay = document.getElementById("drawer-overlay");
         const drawer = document.getElementById("membership-request-drawer");
@@ -464,11 +496,58 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
             closeDrawer();
           });
         }
-
-        // Initial data fetch
       });
-      // Initial data fetch
+      function fetchBooks() {
+        fetch("books")
+          .then((response) => response.json())
+          .then((books) => {
+            const tbody = document.getElementById("books-table-body");
+
+            if (!books || books.length === 0) {
+              const noDataRow = document.createElement("tr");
+              const noDataCell = document.createElement("td");
+              noDataCell.setAttribute("colspan", "6");
+              noDataCell.textContent = "No books available";
+              noDataRow.appendChild(noDataCell);
+              tbody.appendChild(noDataRow);
+              return;
+            }
+
+            books.forEach((book) => {
+              const roomCode = book.shelf.room.roomCode || "Unassigned";
+              const bookCategory = book.shelf.bookCategory || "Uncategorized";
+              const publisherName = book.publisherName || "Unknown";
+              const bookStatus = book.bookStatus || "Unknown";
+
+              const row = document.createElement("tr");
+              row.innerHTML = `
+          <td>${book.title || "Untitled"}</td>
+          <td>${bookCategory}</td>
+          <td>${roomCode}</td>
+          <td>${publisherName}</td>
+          <td>${bookStatus}</td>
+          <td>
+            <button onclick="borrowThisBook('${
+              book.bookId
+            }')" class="action-btn borrow-btn">Borrow</button>
+          </td>
+        `;
+              tbody.appendChild(row);
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching books:", error);
+            const tbody = document.getElementById("books-table-body");
+            const errorRow = document.createElement("tr");
+            const errorCell = document.createElement("td");
+            errorCell.setAttribute("colspan", "6");
+            errorCell.textContent = "Error loading books";
+            errorRow.appendChild(errorCell);
+            tbody.appendChild(errorRow);
+          });
+      }
       document.addEventListener("DOMContentLoaded", () => {
+        fetchBooks();
         if (userId) {
           fetchMembershipData(userId);
         } else {
@@ -481,16 +560,12 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
         document.querySelectorAll(".tab-content").forEach((tab) => {
           tab.classList.remove("active");
         });
-
-        // Add 'active' class to the selected tab
         const selectedTab = document.getElementById(tabId);
         if (selectedTab) {
           selectedTab.classList.add("active");
         } else {
           console.error(`Tab with ID ${tabId} not found.`);
         }
-
-        // Prevent default behavior of the anchor tag
         return false;
       }
 
@@ -506,8 +581,6 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
             showTab(tabId);
           });
         });
-
-        // Initial data fetch
         if (userId) {
           fetchMembershipData(userId);
         } else {

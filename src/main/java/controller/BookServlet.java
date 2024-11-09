@@ -161,7 +161,6 @@ public class BookServlet extends HttpServlet {
             String role = requestBody.get("role");
             String bookId = requestBody.get("bookId");
 
-            // Check permission
             if (!hasPermission(role, "DELETE_BOOK")) {
                 resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 out.write(mapper.writeValueAsString(Map.of("error", "You do not have permission to delete books.")));
