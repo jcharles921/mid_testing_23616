@@ -1,320 +1,330 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
-pageEncoding="UTF-8"%> <% String userName = (String)
+	pageEncoding="UTF-8"%>
+<% String userName = (String)
 session.getAttribute("userName"); String role = (String)
 session.getAttribute("role"); %>
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Librarian Dashboard</title>
-    <link rel="stylesheet" href="./styles/librarian.css" />
-    <style>
-      /* Drawer Styles */
-      .drawer {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 300px;
-        height: 100%;
-        background-color: #f8f8f8;
-        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        justify-content: start;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-        z-index: 1000;
-      }
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Librarian Dashboard</title>
+<link rel="stylesheet" href="./styles/librarian.css" />
+<style>
+/* Existing styles */
+.drawer {
+	position: fixed;
+	top: 0;
+	right: 0;
+	width: 300px;
+	height: 100%;
+	background-color: #f8f8f8;
+	box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+	padding: 20px;
+	display: flex;
+	flex-direction: column;
+	justify-content: start;
+	transform: translateX(100%);
+	transition: transform 0.3s ease;
+	z-index: 1000;
+}
 
-      .drawer-content {
-        margin-top: 20px;
-      }
+.drawer-content {
+	margin-top: 20px;
+}
 
-      .hidden {
-        display: none;
-      }
+.hidden {
+	display: none;
+}
 
-      .drawer.open {
-        transform: translateX(0);
-      }
+.drawer.open {
+	transform: translateX(0);
+}
 
-      .close-btn {
-        background: none;
-        border: none;
-        font-size: 24px;
-        align-self: flex-end;
-        cursor: pointer;
-      }
+.close-btn {
+	background: none;
+	border: none;
+	font-size: 24px;
+	align-self: flex-end;
+	cursor: pointer;
+}
 
-      #add-book-form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
+#add-book-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-      #add-book-form input,
-      #add-book-form button {
-        padding: 8px;
-        border-radius: 4px;
-      }
+#add-book-form input, #add-book-form button {
+	padding: 8px;
+	border-radius: 4px;
+}
 
-      #add-book-form button {
-        background-color: #77ba99;
-        color: white;
-        border: none;
-        cursor: pointer;
-      }
+#add-book-form button {
+	background-color: #77ba99;
+	color: white;
+	border: none;
+	cursor: pointer;
+}
 
-      .drawer-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: none;
-        z-index: 999;
-      }
+.drawer-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5);
+	display: none;
+	z-index: 999;
+}
 
-      .drawer-overlay.visible {
-        display: block;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="dashboard">
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        <h2>Library Admin</h2>
-        <nav>
-          <ul>
-            <li><a href="#book-management">Book Management</a></li>
-            <li><a href="#membership-management">Membership Management</a></li>
-          </ul>
-        </nav>
-      </aside>
+.drawer-overlay.visible {
+	display: block;
+}
 
-      <!-- Main Panel -->
-      <main class="main-panel">
-        <header>
-          <h1>Welcome, <%= userName %>!</h1>
-          <p>Role: <%= role %></p>
-        </header>
+/* New styles for tabs */
+.tab-content {
+	display: none;
+}
 
-        <!-- Books Section -->
-        <div class="card">
-          <div class="section-header">
-            <h3>Available Books</h3>
-            <button onclick="openAddBookDrawer()" class="add-book-btn">
-              Add New Book
-            </button>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Edition</th>
-                <th>ISBN</th>
-                <th>Publisher</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="books-table-body">
-              <tr>
-                <td colspan="6">Loading books...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </main>
-    </div>
+.tab-content.active {
+	display: block;
+}
 
-    <!-- Add Book Drawer -->
-    <div class="drawer-overlay" id="drawer-overlay"></div>
-    <div id="add-book-drawer" class="drawer hidden">
-      <div class="drawer-content">
-        <button class="close-btn" onclick="closeDrawer()">×</button>
-        <h3>Add New Book</h3>
-        <form id="add-book-form">
-          <input
-            type="text"
-            id="title"
-            name="title"
-            placeholder="Book Title"
-            required
-          />
-          <input
-            type="number"
-            id="edition"
-            name="edition"
-            placeholder="Edition"
-            required
-          />
-          <input
-            type="text"
-            id="ISBNCode"
-            name="ISBNCode"
-            placeholder="ISBN Code"
-            required
-          />
-          <input
-            type="text"
-            id="publisherName"
-            name="publisherName"
-            placeholder="Publisher Name"
-            required
-          />
-          <input
-            type="date"
-            id="publicationYear"
-            name="publicationYear"
-            required
-          />
-          <button type="submit">Add Book</button>
-        </form>
-      </div>
-    </div>
+.action-btn {
+	padding: 6px 12px;
+	border-radius: 4px;
+	border: none;
+	cursor: pointer;
+	margin: 0 4px;
+}
 
-    <script>
-      // Initial data and role
-      const userRole = "<%= role %>";
+.accept-btn {
+	background-color: #4caf50;
+	color: white;
+}
 
-      // Fetch and display books
-      function fetchBooks() {
-        fetch("books")
-          .then((response) => response.json())
-          .then((books) => {
-            const tbody = document.getElementById("books-table-body");
-            console.log(books);
-            if (!books || books.length === 0) {
-              tbody.innerHTML =
-                '<tr><td colspan="6">No books available</td></tr>';
-              return;
-            }
+.refuse-btn {
+	background-color: #f44336;
+	color: white;
+}
 
-            tbody.innerHTML = books
-              ?.map(
-                (book) => `
-                        <tr>
-                            <td>${book.title}</td>
-                            <td>${book.edition}</td>
-                            <td>${book.ISBNCode}</td>
-                            <td>${book.publisherName}</td>
-                            <td>${book.bookStatus}</td>
-                            <td>
-                                <button onclick="deleteBook('${book.bookId}')" class="action-btn delete-btn">Delete</button>
-                            </td>
-                        </tr>
-                    `
-              )
-              .join("");
-          })
-          .catch((error) => {
-            console.error("Error fetching books:", error);
-            document.getElementById("books-table-body").innerHTML =
-              '<tr><td colspan="6">Error loading books</td></tr>';
-          });
-      }
+.delete-btn {
+	background-color: #f44336;
+	color: white;
+}
+</style>
+</head>
+<body>
+	<div class="dashboard">
+		<!-- Sidebar -->
+		<aside class="sidebar">
+			<h2>Library Admin</h2>
+			<nav>
+				<ul>
+					<li><a href="#" onclick="showTab('book-management')"
+						class="tab-link">Book Management</a></li>
+					<li><a href="#" onclick="showTab('membership-management')"
+						class="tab-link">Membership Management</a></li>
+					<li><a href="#" onclick="showTab('shelf-rooms')"
+						class="tab-link">Shelfs and Rooms</a></li>
+				</ul>
+			</nav>
+		</aside>
 
-      // Add book function
-      function addBook(bookData) {
-        fetch("books", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...bookData,
-            role: userRole,
-          }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.error) {
-              alert(data.error);
-            } else {
-              alert("Book added successfully");
-              closeDrawer();
-              fetchBooks();
-            }
-          })
-          .catch((error) => {
-            console.error("Error adding book:", error);
-            alert("Error adding book");
-          });
-      }
+		<!-- Main Panel -->
+		<main class="main-panel">
+			<header>
+				<h1>
+					Welcome,
+					<%= userName %>!
+				</h1>
+				<p>
+					Role:
+					<%= role %></p>
+			</header>
 
-      // Delete book function
-      function deleteBook(bookId) {
-        if (!confirm("Are you sure you want to delete this book?")) return;
+			<!-- Books Section -->
+			<div id="book-management" class="tab-content active">
+				<div class="card">
+					<div class="section-header">
+						<h3>Available Books</h3>
+						<button onclick="openAddBookDrawer()" class="add-book-btn">
+							Add New Book</button>
+					</div>
+					<table>
+						<thead>
+							<tr>
+								<th>Title</th>
+								<th>Edition</th>
+								<th>ISBN</th>
+								<th>Publisher</th>
+								<th>Status</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody id="books-table-body">
+							<tr>
+								<td colspan="6">Loading books...</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
 
-        fetch("books", {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            bookId: bookId,
-            role: userRole,
-          }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.error) {
-              alert(data.error);
-            } else {
-              alert("Book deleted successfully");
-              fetchBooks();
-            }
-          })
-          .catch((error) => {
-            console.error("Error deleting book:", error);
-            alert("Error deleting book");
-          });
-      }
+			<!-- Membership Management Section -->
+			<div id="membership-management" class="tab-content">
+				<div class="card">
+					<div class="section-header">
+						<h3>Membership Requests</h3>
+					</div>
+					<table>
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Email</th>
+								<th>Request Date</th>
+								<th>Status</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody id="membership-table-body">
+							<tr>
+								<td colspan="5">Loading membership requests...</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
 
-      // Drawer functions
-      function openAddBookDrawer() {
-        const overlay = document.getElementById("drawer-overlay");
-        const drawer = document.getElementById("add-book-drawer");
-        overlay.classList.add("visible");
-        drawer.classList.remove("hidden");
-        drawer.classList.add("open");
-      }
+			<!-- Shelfs and Rooms Section -->
+			<div id="shelf-rooms" class="tab-content">
+				<div class="card">
+					<div class="section-header">
+						<h3>Shelfs and Rooms</h3>
 
-      function closeDrawer() {
-        const overlay = document.getElementById("drawer-overlay");
-        const drawer = document.getElementById("add-book-drawer");
-        overlay.classList.remove("visible");
-        drawer.classList.remove("open");
-        setTimeout(() => drawer.classList.add("hidden"), 300);
-      }
+						<div style="display: flex; gap: 15px;">
+							<button onclick="openAddRoomDrawer()" class="add-book-btn">
+								Add Room</button>
+							<button onclick="openAddShelfDrawer()" class="add-book-btn">Add
+								Shelf</button>
 
-      // Event Listeners
-      document.addEventListener("DOMContentLoaded", () => {
-        const overlay = document.getElementById("drawer-overlay");
-        const form = document.getElementById("add-book-form");
+						</div>
+					</div>
+					<table>
+						<thead>
+							<tr>
+								<th>Shelf Name</th>
+								<th>Assigned Room</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody id="shelf-table-body">
+							<tr>
+								<td colspan="3">Loading shelves...</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</main>
+	</div>
 
-        overlay.addEventListener("click", closeDrawer);
+	<!-- Add Book Drawer -->
+	<div class="drawer-overlay" id="drawer-overlay"></div>
+	<div id="add-book-drawer" class="drawer hidden">
+		<div class="drawer-content">
+			<button class="close-btn" onclick="closeDrawer()">×</button>
+			<h3>Add New Book</h3>
+			<form id="add-book-form">
+				<input type="text" id="title" name="title" placeholder="Book Title"
+					required /> <input type="number" id="edition"
+					name="edition" placeholder="Edition" required /> <input
+					type="text" id="ISBNCode" name="ISBNCode" placeholder="ISBN Code"
+					required /> <input type="text" id="publisherName"
+					name="publisherName" placeholder="Publisher Name" required />
+				<input type="date" id="publicationYear" name="publicationYear"
+					required />
+				<button type="submit">Add Book</button>
+			</form>
+		</div>
+	</div>
+	<!-- Assign Room Drawer -->
+	<div id="assign-room-drawer" class="drawer hidden">
+		<div class="drawer-content">
+			<button class="close-btn" onclick="closeDrawer()">×</button>
+			<h3>Assign Room to Shelf</h3>
+			<form id="assign-room-form">
+				<select id="roomSelect" name="roomId" required>
+					<option value="">Select Room</option>
+				</select>
+				<button type="submit">Assign Room</button>
+			</form>
+		</div>
+	</div>
 
-        form.addEventListener("submit", (event) => {
-          event.preventDefault();
-          const formData = {
-            title: form.title.value,
-            edition: form.edition.value,
-            ISBNCode: form.ISBNCode.value,
-            publisherName: form.publisherName.value,
-            publicationYear: form.publicationYear.value,
-          };
-          addBook(formData);
-        });
+	<!-- Add Room Drawer -->
+	<div id="add-room-drawer" class="drawer hidden">
+		<div class="drawer-content">
+			<button class="close-btn" onclick="closeDrawer()">×</button>
+			<h3>Add New Room</h3>
+			<form id="add-room-form">
+				<input type="text" id="roomName" name="roomCode"
+					placeholder="Room Name" required />
 
-        // Initial books fetch
-        fetchBooks();
-      });
-    </script>
-  </body>
+				<button type="submit">Add Room</button>
+			</form>
+		</div>
+	</div>
+  <!-- Add Shelf Drawer -->
+<div id="add-shelf-drawer" class="drawer hidden">
+  <div class="drawer-content">
+    <button class="close-btn" onclick="closeDrawer()">×</button>
+    <h3>Add Shelf</h3>
+    <form id="add-shelf-form">
+      <input
+        type="text"
+        id="shelfName"
+        name="shelfName"
+        placeholder="Shelf Name"
+        required
+      />
+      <input
+        type="text"
+        id="bookCategory"
+        name="bookCategory"
+        placeholder="Book Category"
+        required
+      />
+      <input
+        type="number"
+        id="initialStock"
+        name="initialStock"
+        placeholder="Initial Stock"
+        required
+      />
+      <input
+        type="number"
+        id="borrowedNumber"
+        name="borrowedNumber"
+        placeholder="Borrowed Number"
+        required
+      />
+      <input
+        type="number"
+        id="availableStock"
+        name="availableStock"
+        placeholder="Available Stock"
+        required
+      />
+      <select id="roomId" name="roomId" required>
+        <option value="" disabled selected>Select Room</option>
+      </select>
+      <button type="submit">Save Shelf</button>
+    </form>
+    
+  </div>
+
+	<script src="./scripts/library.js"></script>
+</body>
 </html>
