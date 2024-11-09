@@ -3,6 +3,7 @@ package listener;
 import dev.morphia.Datastore;
 import dev.morphia.query.Query;
 import model.Permission;
+import model.MembershipType;
 import utils.MongoDBConfig;
 
 import javax.servlet.ServletContextEvent;
@@ -13,6 +14,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @WebListener
 public class AppContextListener implements ServletContextListener {
@@ -32,6 +34,9 @@ public class AppContextListener implements ServletContextListener {
 
 			// Seed permissions
 			seedPermissions();
+
+			// Seed membership types
+			seedMembershipTypes();
 
 		} catch (Exception e) {
 			System.err.println("Failed to initialize application: " + e.getMessage());
@@ -72,8 +77,27 @@ public class AppContextListener implements ServletContextListener {
 		}
 	}
 
+	private void seedMembershipTypes() {
+		Datastore datastore = MongoDBConfig.getDatastore();
+		Query<MembershipType> membershipTypeQuery = datastore.find(MembershipType.class);
+
+		if (membershipTypeQuery.count() > 0) {
+			System.out.println("Membership types are already present.");
+		} else {
+			System.out.println("Seeding membership types...");
+			List<MembershipType> membershipTypes = Arrays.asList(
+					new MembershipType(UUID.randomUUID(), "Gold", 50, 5),
+					new MembershipType(UUID.randomUUID(), "Silver", 30, 3),
+					new MembershipType(UUID.randomUUID(), "Striver", 10, 2)
+			);
+
+			datastore.save(membershipTypes);
+			System.out.println("Membership types seeded successfully.");
+		}
+	}
+
 	@Override
 	public void contextDestroyed(ServletContextEvent sce) {
-		// Clean up resources if needed
+		
 	}
 }
