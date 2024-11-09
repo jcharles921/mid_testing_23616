@@ -499,6 +499,8 @@
           if (response.ok) {
             document.getElementById("successMessage").textContent =
               "Registration successful!";
+            console.log("response ====> " + JSON.stringify(response, null, 2));
+
             setTimeout(() => {
               window.location.href = "./";
             }, 2000);

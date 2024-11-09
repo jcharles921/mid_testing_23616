@@ -28,24 +28,30 @@ public class AuthFilter implements Filter {
         HttpServletResponse res = (HttpServletResponse) response;
         HttpSession session = req.getSession(false);
 
-        // URI for the login page (could be index.html or login.jsp or any other login-related page)
+        // URI for login, signup, and user creation endpoints
         String loginURI = req.getContextPath() + "/index.html";
-        String loginPageURI = req.getContextPath() + "/login"; // If you have a separate login page URL
+        String loginPageURI = req.getContextPath() + "/login"; 
+        String signupURI = req.getContextPath() + "/signup.html"; 
+        String createUserURI = req.getContextPath() + "/createUser"; 
 
-        // Checking if the user is logged in by verifying session attribute
+        // Check if the user is logged in by verifying session attribute
         boolean loggedIn = (session != null && session.getAttribute("userId") != null);
-        
-        // Checking if the current request is for login page or resources that shouldn't be filtered
-        boolean loginRequest = req.getRequestURI().equals(loginURI) || req.getRequestURI().equals(loginPageURI);
-        boolean resourceRequest = req.getRequestURI().endsWith(".css") || req.getRequestURI().endsWith(".js") || req.getRequestURI().endsWith(".jpg") || req.getRequestURI().endsWith(".png");
 
-        // If logged in or requesting the login page/resource, continue the request
-        if (loggedIn || loginRequest || resourceRequest) {
+        // Check if the current request is for login, signup, createUser, or static resources
+        boolean loginRequest = req.getRequestURI().equals(loginURI) || req.getRequestURI().equals(loginPageURI);
+        boolean signupRequest = req.getRequestURI().equals(signupURI);
+        boolean createUserRequest = req.getRequestURI().equals(createUserURI);
+        boolean resourceRequest = req.getRequestURI().endsWith(".css") || req.getRequestURI().endsWith(".js") ||
+                                  req.getRequestURI().endsWith(".jpg") || req.getRequestURI().endsWith(".png");
+
+        // Allow access if logged in, or if it's a login/signup/createUser page or resource request
+        if (loggedIn || loginRequest || signupRequest || createUserRequest || resourceRequest) {
             chain.doFilter(request, response); // Continue processing the request
         } else {
             res.sendRedirect(loginURI); // Redirect to login page if not logged in
         }
     }
+
 
     @Override
     public void destroy() {

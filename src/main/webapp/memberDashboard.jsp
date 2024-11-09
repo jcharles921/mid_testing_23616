@@ -179,11 +179,7 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="books-table-body">
-                <tr>
-                  <td colspan="6">Loading books...</td>
-                </tr>
-              </tbody>
+              <tbody id="books-table-body"></tbody>
             </table>
           </div>
           <br />
@@ -359,6 +355,32 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
           membershipDetails.appendChild(retryButton);
         }
       }
+      function borrowThisBook(bookId) {
+        fetch("borrowBook", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ bookId }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((error) => {
+                throw new Error(error.error || "Failed to borrow the book");
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            alert(data.message || "Book borrowed successfully!");
+            // Optionally, you could refresh the book list or update the UI
+            fetchBooks();
+          })
+          .catch((error) => {
+            console.error("Error borrowing book:", error);
+            alert(`Error: ${error.error}`);
+          });
+      }
 
       function updateBorrowedBooks(books) {
         const booksList = document.getElementById("borrowed-books-list");
@@ -502,14 +524,15 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
           .then((response) => response.json())
           .then((books) => {
             const tbody = document.getElementById("books-table-body");
+            tbody.innerHTML = ""; // Clear existing rows
 
             if (!books || books.length === 0) {
               const noDataRow = document.createElement("tr");
               const noDataCell = document.createElement("td");
               noDataCell.setAttribute("colspan", "6");
               noDataCell.textContent = "No books available";
-              noDataRow.appendChild(noDataCell);
-              tbody.appendChild(noDataRow);
+              noDataRow.append(noDataCell);
+              tbody.append(noDataRow);
               return;
             }
 
@@ -520,32 +543,137 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
               const bookStatus = book.bookStatus || "Unknown";
 
               const row = document.createElement("tr");
-              row.innerHTML = `
-          <td>${book.title || "Untitled"}</td>
-          <td>${bookCategory}</td>
-          <td>${roomCode}</td>
-          <td>${publisherName}</td>
-          <td>${bookStatus}</td>
-          <td>
-            <button onclick="borrowThisBook('${
-              book.bookId
-            }')" class="action-btn borrow-btn">Borrow</button>
-          </td>
-        `;
-              tbody.appendChild(row);
+
+              const titleCell = document.createElement("td");
+              titleCell.textContent = book.title;
+              row.append(titleCell);
+
+              const categoryCell = document.createElement("td");
+              categoryCell.textContent = bookCategory;
+              row.append(categoryCell);
+
+              const roomCodeCell = document.createElement("td");
+              roomCodeCell.textContent = roomCode;
+              row.append(roomCodeCell);
+
+              const publisherCell = document.createElement("td");
+              publisherCell.textContent = publisherName;
+              row.append(publisherCell);
+
+              const statusCell = document.createElement("td");
+              statusCell.textContent = bookStatus;
+              row.append(statusCell);
+
+              const actionCell = document.createElement("td");
+              const borrowButton = document.createElement("button");
+              borrowButton.textContent = "Borrow";
+              borrowButton.className = "action-btn borrow-btn";
+              borrowButton.onclick = () => borrowThisBook(book.bookId);
+              actionCell.append(borrowButton);
+              row.append(actionCell);
+
+              tbody.append(row);
             });
           })
           .catch((error) => {
             console.error("Error fetching books:", error);
             const tbody = document.getElementById("books-table-body");
+            tbody.innerHTML = ""; // Clear existing rows in case of error
             const errorRow = document.createElement("tr");
             const errorCell = document.createElement("td");
             errorCell.setAttribute("colspan", "6");
             errorCell.textContent = "Error loading books";
+            errorRow.append(errorCell);
+            tbody.append(errorRow);
+          });
+
+          fetch("borrowBook", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "same-origin",
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Failed to fetch borrowed books");
+            }
+            return response.json();
+          })
+          .then((borrowedBooks) => {
+            const tbody = document.getElementById("borrows-table-body");
+            tbody.innerHTML = ""; // Clear existing rows
+
+            if (!borrowedBooks || borrowedBooks.length === 0) {
+              const noDataRow = document.createElement("tr");
+              const noDataCell = document.createElement("td");
+              noDataCell.setAttribute("colspan", "7");
+              noDataCell.textContent = "No borrowed books found";
+              noDataRow.appendChild(noDataCell);
+              tbody.appendChild(noDataRow);
+              return;
+            }
+
+            borrowedBooks.forEach((borrow) => {
+              const row = document.createElement("tr");
+
+              // Book Title
+              const titleCell = document.createElement("td");
+              titleCell.textContent = borrow.book.title;
+              row.appendChild(titleCell);
+
+              // Reader Name
+              const readerCell = document.createElement("td");
+              readerCell.textContent = borrow.reader.firstName+" "+ borrow.reader.lastName;
+              row.appendChild(readerCell);
+
+              // Pickup Date
+              const pickupCell = document.createElement("td");
+              pickupCell.textContent = new Date(
+                borrow.pickupDate
+              ).toLocaleDateString();
+              row.appendChild(pickupCell);
+
+              // Due Date
+              const dueCell = document.createElement("td");
+              dueCell.textContent = new Date(
+                borrow.dueDate
+              ).toLocaleDateString();
+              row.appendChild(dueCell);
+
+              // Return Date
+              const returnCell = document.createElement("td");
+              returnCell.textContent = borrow.returnDate
+                ? new Date(borrow.returnDate).toLocaleDateString()
+                : "Not returned";
+              row.appendChild(returnCell);
+
+              // Fine
+              const fineCell = document.createElement("td");
+              fineCell.textContent = borrow.fine+ " Rwf";
+              row.appendChild(fineCell);
+
+              // Late Charges
+              const lateChargesCell = document.createElement("td");
+              lateChargesCell.textContent = borrow.lateChargeFees +"  Rwf";
+              row.appendChild(lateChargesCell);
+
+              tbody.appendChild(row);
+            });
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            const tbody = document.getElementById("borrows-table-body");
+            tbody.innerHTML = ""; // Clear existing rows
+            const errorRow = document.createElement("tr");
+            const errorCell = document.createElement("td");
+            errorCell.setAttribute("colspan", "7");
+            errorCell.textContent = "Error loading borrowed books";
             errorRow.appendChild(errorCell);
             tbody.appendChild(errorRow);
           });
       }
+
       document.addEventListener("DOMContentLoaded", () => {
         fetchBooks();
         if (userId) {

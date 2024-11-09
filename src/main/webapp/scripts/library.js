@@ -28,7 +28,7 @@ function fetchBooks() {
         tbody.innerHTML = '<tr><td colspan="6">No books available</td></tr>';
         return;
       }
-
+      fetchBorrowedBooks();
       tbody.innerHTML = books
         .map((book) => {
           // Safely access nested properties
@@ -57,6 +57,92 @@ function fetchBooks() {
       console.error("Error fetching books:", error);
       document.getElementById("books-table-body").innerHTML =
         '<tr><td colspan="6">Error loading books</td></tr>';
+    });
+}
+function fetchBorrowedBooks() {
+  fetch("borrowBook", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "same-origin",
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to fetch borrowed books");
+      }
+      return response.json();
+    })
+    .then((borrowedBooks) => {
+      const tbody = document.getElementById("borrows-table-body");
+      tbody.innerHTML = ""; // Clear existing rows
+
+      if (!borrowedBooks || borrowedBooks.length === 0) {
+        const noDataRow = document.createElement("tr");
+        const noDataCell = document.createElement("td");
+        noDataCell.setAttribute("colspan", "7");
+        noDataCell.textContent = "No borrowed books found";
+        noDataRow.appendChild(noDataCell);
+        tbody.appendChild(noDataRow);
+        return;
+      }
+
+      borrowedBooks.forEach((borrow) => {
+        const row = document.createElement("tr");
+
+        // Book Title
+        const titleCell = document.createElement("td");
+        titleCell.textContent = borrow.book.title;
+        row.appendChild(titleCell);
+
+        // Reader Name
+        const readerCell = document.createElement("td");
+        readerCell.textContent =
+          borrow.reader.firstName + " " + borrow.reader.lastName;
+        row.appendChild(readerCell);
+
+        // Pickup Date
+        const pickupCell = document.createElement("td");
+        pickupCell.textContent = new Date(
+          borrow.pickupDate
+        ).toLocaleDateString();
+        row.appendChild(pickupCell);
+
+        // Due Date
+        const dueCell = document.createElement("td");
+        dueCell.textContent = new Date(borrow.dueDate).toLocaleDateString();
+        row.appendChild(dueCell);
+
+        // Return Date
+        const returnCell = document.createElement("td");
+        returnCell.textContent = borrow.returnDate
+          ? new Date(borrow.returnDate).toLocaleDateString()
+          : "Not returned";
+        row.appendChild(returnCell);
+
+        // Fine
+        const fineCell = document.createElement("td");
+        fineCell.textContent = borrow.fine + " Rwf";
+        row.appendChild(fineCell);
+
+        // Late Charges
+        const lateChargesCell = document.createElement("td");
+        lateChargesCell.textContent = borrow.lateChargeFees + "  Rwf";
+        row.appendChild(lateChargesCell);
+
+        tbody.appendChild(row);
+      });
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      const tbody = document.getElementById("borrows-table-body");
+      tbody.innerHTML = ""; // Clear existing rows
+      const errorRow = document.createElement("tr");
+      const errorCell = document.createElement("td");
+      errorCell.setAttribute("colspan", "7");
+      errorCell.textContent = "Error loading borrowed books";
+      errorRow.appendChild(errorCell);
+      tbody.appendChild(errorRow);
     });
 }
 
