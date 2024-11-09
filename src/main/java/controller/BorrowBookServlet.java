@@ -163,8 +163,9 @@ public class BorrowBookServlet extends HttpServlet {
 		               role.equalsIgnoreCase("TEACHER"))) {
 		    	System.out.println("For student and teacher");
 		        // Fetch only current user borrows
+		    	  User user = datastore.find(User.class).filter(Filters.eq("_id", userId)).first();
 		        borrowedBooks = datastore.find(Borrower.class)
-		                .filter(Filters.eq("readerId", userId))
+		                .filter(Filters.eq("reader", user))
 		                .iterator()
 		                .toList();
 		    } else {
