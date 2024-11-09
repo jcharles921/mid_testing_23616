@@ -133,55 +133,68 @@ public class BorrowBookServlet extends HttpServlet {
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-	    resp.setContentType("application/json");
-	    PrintWriter out = resp.getWriter();
-	    ObjectMapper mapper = new ObjectMapper();
+		resp.setContentType("application/json");
+		PrintWriter out = resp.getWriter();
+		ObjectMapper mapper = new ObjectMapper();
 
-	    try {
-	        HttpSession session = req.getSession();
-	        String role = (String) session.getAttribute("role");
-	        UUID userId = (UUID) session.getAttribute("userId");
+		try {
+		    HttpSession session = req.getSession();
+		    String role = (String) session.getAttribute("role");
+		    UUID userId = (UUID) session.getAttribute("userId");
+			System.out.println("Role ===>"+role);
+		    if (userId == null) {
+		        resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+		        out.write(mapper.writeValueAsString(Map.of("error", "User not authenticated")));
+		        return;
+		    }
 
-	        if (userId == null) {
-	            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-	            out.write(mapper.writeValueAsString(Map.of("error", "User not authenticated")));
-	            return;
-	        }
+		    List<Borrower> borrowedBooks;
 
-	        List<Borrower> borrowedBooks;
+		    if (role != null && 
+		       (role.equalsIgnoreCase("LIBRARIAN") || 
+		        role.equalsIgnoreCase("DEAN") || 
+		        role.equalsIgnoreCase("HOD") || 
+		        role.equalsIgnoreCase("MANAGER"))) {
+		        // Fetch all borrows for administrative roles
+		    	System.out.println("For admininstrative ");
+		        borrowedBooks = datastore.find(Borrower.class).iterator().toList();
+		    } else if (role != null && 
+		              (role.equalsIgnoreCase("STUDENT") || 
+		               role.equalsIgnoreCase("TEACHER"))) {
+		    	System.out.println("For student and teacher");
+		        // Fetch only current user borrows
+		        borrowedBooks = datastore.find(Borrower.class)
+		                .filter(Filters.eq("readerId", userId))
+		                .iterator()
+		                .toList();
+		    } else {
+		        resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+		        out.write(mapper.writeValueAsString(Map.of("error", "Invalid role")));
+		        return;
+		    }
 
-	        // If librarian, return all borrowed books
-	        if (role.equals("LIBRARIAN")|| role.equals("DEAN") || role.equals("HOD")|| role.equals("MANAGER")) {
-	            borrowedBooks = datastore.find(Borrower.class).iterator().toList();
-	        } else { // For reader, return only their borrowed books
-	            User user = datastore.find(User.class).filter(Filters.eq("_id", userId)).first();
-	            borrowedBooks = datastore.find(Borrower.class)
-	                    .filter(Filters.eq("reader", user))
-	                    .iterator()
-	                    .toList();
-	        }
+		    // Late charge check logic (same as before)
+		    Date today = new Date();
+		    for (Borrower borrower : borrowedBooks) {
+		        if (borrower.getDueDate() != null && today.after(borrower.getDueDate())) {
+		            long daysLate = (today.getTime() - borrower.getDueDate().getTime()) / (1000 * 60 * 60 * 24);
+		            borrower.setLateChargeFees((int) daysLate * 100);
+		            datastore.save(borrower);
+		        }
+		    }
 
-	        // Check for overdue books and calculate late charges
-	        Date today = new Date();
-	        for (Borrower borrower : borrowedBooks) {
-	            if (borrower.getDueDate() != null && today.after(borrower.getDueDate())) {
-	                long daysLate = (today.getTime() - borrower.getDueDate().getTime()) / (1000 * 60 * 60 * 24);
-	                borrower.setLateChargeFees((int) daysLate * 100);
-	                datastore.save(borrower); // Update late fees in the database
-	            }
-	        }
-
-	        if (borrowedBooks.isEmpty()) {
-	            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-	            out.write(mapper.writeValueAsString(Map.of("message", "No borrowed books found")));
-	        } else {
-	            resp.setStatus(HttpServletResponse.SC_OK);
-	            out.write(mapper.writeValueAsString(borrowedBooks));
-	        }
-	    } catch (Exception e) {
-	        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-	        out.write(mapper.writeValueAsString(Map.of("error", e.getMessage())));
-	    }
+		    // Response logic
+		    if (borrowedBooks.isEmpty()) {
+		        resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+		        out.write(mapper.writeValueAsString(Map.of("message", "No borrowed books found")));
+		    } else {
+		        resp.setStatus(HttpServletResponse.SC_OK);
+		        out.write(mapper.writeValueAsString(borrowedBooks));
+		    }
+		} catch (Exception e) {
+		    resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		    out.write(mapper.writeValueAsString(Map.of("error", e.getMessage())));
+		}
 	}
 
 	
