@@ -23,7 +23,6 @@ public class MembershipServlet extends HttpServlet {
 		datastore = MongoDBConfig.getDatastore();
 	}
 
-	// Handles creating membership
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		resp.setContentType("application/json");
@@ -108,7 +107,6 @@ public class MembershipServlet extends HttpServlet {
 			String role = requestBody.get("role");
 			String action = requestBody.get("action");
 
-			// Check if the user has permission to validate memberships
 			if (!hasPermission(role, "APPROVE_MEMBERSHIP")) {
 				resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
 				out.write(mapper
@@ -157,7 +155,6 @@ public class MembershipServlet extends HttpServlet {
 		try {
 			String userId = req.getParameter("userId");
 
-			// Validate that userId is a valid UUID format (since your model uses UUID)
 			if (userId == null || !isValidUUID(userId)) {
 				resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 				out.write(mapper.writeValueAsString(Map.of("error", "Invalid userId. It must be a valid UUID.")));

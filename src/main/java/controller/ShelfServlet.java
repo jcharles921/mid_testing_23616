@@ -47,7 +47,6 @@ public class ShelfServlet extends HttpServlet {
         try {
             Shelf shelf = mapper.readValue(req.getReader(), Shelf.class);
 
-            // Handle roomId manually if provided
             String roomId = req.getParameter("roomId");
             if (roomId != null) {
                 Room room = datastore.find(Room.class).filter(Filters.eq("_id", UUID.fromString(roomId))).first();

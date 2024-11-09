@@ -72,11 +72,9 @@ public class RoomServlet extends HttpServlet {
                 return;
             }
 
-            // Parse UUIDs for shelfId and roomId
             UUID shelfId = UUID.fromString(shelfIdStr);
             UUID roomId = UUID.fromString(roomIdStr);
 
-            // Retrieve the Shelf and Room objects from the datastore
             Shelf shelf = datastore.find(Shelf.class).filter(Filters.eq("_id", shelfId)).first();
             Room room = datastore.find(Room.class).filter(Filters.eq("_id", roomId)).first();
 
@@ -88,13 +86,10 @@ public class RoomServlet extends HttpServlet {
                 throw new IllegalArgumentException("Room not found with provided roomId.");
             }
 
-            // Assign the new room to the shelf
             shelf.setRoom(room);
             
-            // Save the updated shelf object in the datastore
             datastore.save(shelf);
 
-            // Return success response
             resp.setStatus(HttpServletResponse.SC_OK);
             out.write(mapper.writeValueAsString(Map.of("message", "Shelf updated with new room successfully")));
         } catch (Exception e) {

@@ -217,7 +217,7 @@ session.getAttribute("role"); %>
 			<div id="membership-management" class="tab-content">
 				<div class="card">
 					<div class="section-header">
-						<h3>Membe	rship Requests</h3>
+						<h3>Membership Requests</h3>
 					</div>
 					<table>
 						<thead>

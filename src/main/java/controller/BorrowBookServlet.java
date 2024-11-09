@@ -112,9 +112,9 @@ public class BorrowBookServlet extends HttpServlet {
 			borrower.setBook(book);
 			borrower.setReader(user);
 			borrower.setPickupDate(new java.util.Date());
-			borrower.setDueDate(new java.util.Date(System.currentTimeMillis() + borrowDays * 24L * 60L * 60L * 1000L)); // Set
-																														// due
-																														// date
+			borrower.setDueDate(new java.util.Date(System.currentTimeMillis() + borrowDays * 24L * 60L * 60L * 1000L)); // 24 h times the number of days
+																														
+																														
 			borrower.setFine(membershipType.getPrice());
 			borrower.setLateChargeFees(0); // Initially, no late fees
 			datastore.save(borrower);
@@ -151,7 +151,7 @@ public class BorrowBookServlet extends HttpServlet {
 	        List<Borrower> borrowedBooks;
 
 	        // If librarian, return all borrowed books
-	        if (role.equals("LIBRARIAN")) {
+	        if (role.equals("LIBRARIAN")|| role.equals("DEAN") || role.equals("HOD")|| role.equals("MANAGER")) {
 	            borrowedBooks = datastore.find(Borrower.class).iterator().toList();
 	        } else { // For reader, return only their borrowed books
 	            User user = datastore.find(User.class).filter(Filters.eq("_id", userId)).first();

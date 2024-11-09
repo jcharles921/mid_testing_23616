@@ -578,7 +578,7 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
           .catch((error) => {
             console.error("Error fetching books:", error);
             const tbody = document.getElementById("books-table-body");
-            tbody.innerHTML = ""; // Clear existing rows in case of error
+            tbody.innerHTML = "";
             const errorRow = document.createElement("tr");
             const errorCell = document.createElement("td");
             errorCell.setAttribute("colspan", "6");
@@ -587,7 +587,7 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
             tbody.append(errorRow);
           });
 
-          fetch("borrowBook", {
+        fetch("borrowBook", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -624,7 +624,8 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
 
               // Reader Name
               const readerCell = document.createElement("td");
-              readerCell.textContent = borrow.reader.firstName+" "+ borrow.reader.lastName;
+              readerCell.textContent =
+                borrow.reader.firstName + " " + borrow.reader.lastName;
               row.appendChild(readerCell);
 
               // Pickup Date
@@ -650,12 +651,12 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
 
               // Fine
               const fineCell = document.createElement("td");
-              fineCell.textContent = borrow.fine+ " Rwf";
+              fineCell.textContent = borrow.fine + " Rwf";
               row.appendChild(fineCell);
 
               // Late Charges
               const lateChargesCell = document.createElement("td");
-              lateChargesCell.textContent = borrow.lateChargeFees +"  Rwf";
+              lateChargesCell.textContent = borrow.lateChargeFees + "  Rwf";
               row.appendChild(lateChargesCell);
 
               tbody.appendChild(row);
@@ -700,8 +701,6 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
       document.addEventListener("DOMContentLoaded", () => {
         // Set default active tab on page load
         showTab("membership-details-tab");
-
-        // Attach click event listeners to tab links
         document.querySelectorAll(".tab-link").forEach((link) => {
           link.addEventListener("click", (event) => {
             event.preventDefault();
@@ -728,7 +727,7 @@ session.getAttribute("role"); %> <%@ page import="java.util.*" %>
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userId: userId, // Safe userId from server-side
+            userId: userId,
             membershipTypeId: membershipTypeId,
             role: role,
           }),

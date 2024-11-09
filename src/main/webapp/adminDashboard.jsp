@@ -1,9 +1,7 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%
-    // Directly access session attributes since authentication is handled by a filter.
-    String userName = (String) session.getAttribute("userName");
-    String role = (String) session.getAttribute("role");
-%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+pageEncoding="UTF-8"%> <% String userName = (String)
+session.getAttribute("userName"); String role = (String)
+session.getAttribute("role"); %>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -19,9 +17,26 @@
         <h2>Admin Dashboard</h2>
         <nav>
           <ul>
-            <li><a href="#borrowing-trends">Borrowing Trends</a></li>
-            <li><a href="#membership-insights">Membership Insights</a></li>
-            <li><a href="#location-data">Location Data</a></li>
+            <li>
+              <a href="#" class="tab-link" data-target="borrowing-trends"
+                >Borrowing Trends</a
+              >
+            </li>
+            <li>
+              <a href="#" class="tab-link" data-target="membership-insights"
+                >Membership Insights</a
+              >
+            </li>
+            <li>
+              <a href="#" class="tab-link" data-target="borrows-management"
+                >Book Borrowing</a
+              >
+            </li>
+            <li>
+              <a href="#" class="tab-link" data-target="membership-management"
+                >Membership Requests</a
+              >
+            </li>
           </ul>
         </nav>
       </aside>
@@ -56,13 +71,58 @@
               </div>
             </div>
           </div>
-
-          <div class="card" id="location-data">
-            <h3>Location Breakdown</h3>
-            <div class="chart-placeholder">Bar Chart Placeholder</div>
-          </div>
         </section>
+        <div id="borrows-management" class="tab-content">
+          <div class="card">
+            <div class="section-header">
+              <h3>Book Borrowing Details</h3>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Book Title</th>
+                  <th>Reader</th>
+                  <th>Pickup Date</th>
+                  <th>Due Date</th>
+                  <th>Return Date</th>
+                  <th>Fine</th>
+                  <th>Late Charges</th>
+                </tr>
+              </thead>
+              <tbody id="borrows-table-body">
+                <tr>
+                  <td colspan="7">Loading borrowed books...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div id="membership-management" class="tab-content">
+          <div class="card">
+            <div class="section-header">
+              <h3>Membership Requests</h3>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Membership type</th>
+                  <th>Request Date</th>
+                  <th>Expiration Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="membership-table-body">
+                <tr>
+                  <td colspan="5">Loading membership requests...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </main>
     </div>
   </body>
+  <script src="./scripts/administrators.js"></script>
 </html>

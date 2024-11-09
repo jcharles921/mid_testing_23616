@@ -11,7 +11,7 @@ public class User extends Person {
     private RoleType role;
 
     @Property("village_id")
-    private UUID villageId; // Assuming this stores the UUID as a String
+    private UUID villageId; 
 
     public enum RoleType {
         STUDENT, MANAGER, TEACHER, DEAN, HOD, LIBRARIAN
@@ -19,8 +19,8 @@ public class User extends Person {
 
     // Constructors
     public User() {
-        super(); // Call the superclass constructor
-        this.setPersonId(UUID.randomUUID()); // Automatically generate a UUID for personId
+        super(); 
+        this.setPersonId(UUID.randomUUID()); 
     }
 
     // Getters and Setters

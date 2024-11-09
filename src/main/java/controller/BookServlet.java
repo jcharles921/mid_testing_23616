@@ -33,10 +33,10 @@ public class BookServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         try {
-            // Parse the request body into a Map
+            
             Map<String, String> requestBody = mapper.readValue(req.getReader(), Map.class);
 
-            // Check if the required fields are present
+            
             String role = requestBody.get("role");
             String shelfId = requestBody.get("shelfId");
             if (role == null || shelfId == null || role.isEmpty() || shelfId.isEmpty()) {
@@ -59,7 +59,7 @@ public class BookServlet extends HttpServlet {
                 return;
             }
 
-            // Create a new book from the request body
+         
             Book book = new Book();
             book.setTitle(requestBody.get("title"));
             book.setEdition(Integer.parseInt(requestBody.getOrDefault("edition", "1")));
@@ -83,11 +83,11 @@ public class BookServlet extends HttpServlet {
             // Update shelf stock
             shelf.setAvailableStock(shelf.getAvailableStock() + 1);
 
-            // Save the book and shelf
+           
             datastore.save(book);
             datastore.save(shelf);
 
-            // Create response map with null checks
+            
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Book created successfully");
             response.put("bookId", book.getBookId() != null ? book.getBookId().toString() : "");
@@ -149,7 +149,7 @@ public class BookServlet extends HttpServlet {
         }
     }
 
-    // Delete a book
+ 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("application/json");
@@ -175,14 +175,26 @@ public class BookServlet extends HttpServlet {
                 return;
             }
 
-            datastore.delete(book);
+            Shelf shelf = book.getShelf(); 
+
+            if (shelf != null) {
+                shelf.setAvailableStock(shelf.getAvailableStock() - 1); 
+                datastore.save(shelf); 
+            }
+
+            datastore.delete(book); 
+
             resp.setStatus(HttpServletResponse.SC_OK);
-            out.write(mapper.writeValueAsString(Map.of("message", "Book deleted successfully")));
+            out.write(mapper.writeValueAsString(Map.of("message", "Book deleted successfully", "shelfAvailableStock", shelf != null ? shelf.getAvailableStock() : null)));
+        } catch (IllegalArgumentException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.write(mapper.writeValueAsString(Collections.singletonMap("error", "Invalid UUID format for book ID")));
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             out.write(mapper.writeValueAsString(Map.of("error", e.getMessage())));
         }
     }
+
 
  // Get all books
     @Override
