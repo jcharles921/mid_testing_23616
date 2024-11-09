@@ -11,11 +11,20 @@ public class MembershipType {
     private int price;
     private int maxBooks;
 
-    // Constructors, Getters, and Setters
+  
     public MembershipType() {
         this.membershipTypeId = UUID.randomUUID();
     }
 
+    // Custom constructor for easier seeding
+    public MembershipType(UUID id, String membershipName, int price, int maxBooks) {
+        this.membershipTypeId = id;
+        this.membershipName = membershipName;
+        this.price = price;
+        this.maxBooks = maxBooks;
+    }
+
+    // Getters and Setters
     public UUID getMembershipTypeId() {
         return membershipTypeId;
     }

@@ -6,28 +6,30 @@ import java.util.List;
 
 @Entity("permissions")
 public class Permission {
-    @Id
-    private UUID permissionId;
-    
-    private String action; 
-    
-    // Define the enum for roles
-    public enum RoleType {
-        STUDENT,
-        MANAGER,
-        TEACHER,
-        DEAN,
-        HOD,
-        LIBRARIAN
-    }
+	   @Id
+	    private UUID permissionId;
+	    
+	    private String action; // Describes the action (e.g., CREATE_LOCATIONS, BORROW_BOOKS)
+	    
+	    @Indexed(options = @IndexOptions(unique = false))
+	    private List<RoleType> allowedRoles; // Defines which roles can perform this action
 
-    // Store allowed roles as a List of RoleType (instead of using @Reference)
-    private List<RoleType> allowedRoles; 
-
+	    public enum RoleType {
+	        STUDENT,
+	        MANAGER,
+	        TEACHER,
+	        DEAN,
+	        HOD,
+	        LIBRARIAN,
+	        SYSTEM 
+	    }
     // Constructors
-    public Permission() {
-        this.permissionId = UUID.randomUUID();
-    }
+	    public Permission(String action, List<RoleType> allowedRoles) {
+	        this.permissionId = UUID.randomUUID();
+	        this.action = action;
+	        this.allowedRoles = allowedRoles;
+	    }
+
 
     // Getters and Setters
     public UUID getPermissionId() {

@@ -1,10 +1,11 @@
 package controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import model.*;
-import utils.MongoDBConfig;
 import dev.morphia.Datastore;
 import dev.morphia.query.filters.Filters;
+import model.*;
+import utils.MongoDBConfig;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
@@ -31,10 +32,17 @@ public class MembershipServlet extends HttpServlet {
 
 		try {
 			Map<String, String> requestBody = mapper.readValue(req.getInputStream(), Map.class);
-
 			String userId = requestBody.get("userId");
 			String membershipTypeId = requestBody.get("membershipTypeId");
-			String role = requestBody.get("role"); // TEACHER or STUDENT
+			String role = requestBody.get("role");
+
+			// Check if the user has permission to create a membership
+			if (!hasPermission(role, "CREATE_MEMBERSHIP")) {
+				resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+				out.write(mapper
+						.writeValueAsString(Map.of("error", "You do not have permission to create memberships.")));
+				return;
+			}
 
 			if (!isValidRole(role)) {
 				resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -58,7 +66,7 @@ public class MembershipServlet extends HttpServlet {
 			membership.setMembershipId(UUID.randomUUID());
 			membership.setReader(user);
 			membership.setMembershipType(membershipType);
-			membership.setMembershipStatus(Membership.MembershipStatus.PENDING); // Default status
+			membership.setMembershipStatus(Membership.MembershipStatus.PENDING);
 			membership.setRegistrationDate(new Date());
 			membership.setExpiringTime(new Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)); // 1 year
 
@@ -87,9 +95,11 @@ public class MembershipServlet extends HttpServlet {
 			String membershipId = requestBody.get("membershipId");
 			String role = requestBody.get("role");
 
-			if (!Permission.RoleType.LIBRARIAN.name().equals(role)) {
+			// Check if the user has permission to validate memberships
+			if (!hasPermission(role, "VALIDATE_MEMBERSHIP")) {
 				resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-				out.write(mapper.writeValueAsString(Map.of("error", "Only a librarian can validate memberships.")));
+				out.write(mapper
+						.writeValueAsString(Map.of("error", "You do not have permission to validate memberships.")));
 				return;
 			}
 
@@ -118,12 +128,6 @@ public class MembershipServlet extends HttpServlet {
 			out.write(mapper.writeValueAsString(Map.of("error", e.getMessage())));
 		}
 	}
-
-	private boolean isValidRole(String role) {
-		return Permission.RoleType.TEACHER.name().equals(role) || Permission.RoleType.STUDENT.name().equals(role);
-	}
-
-	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		resp.setContentType("application/json");
 		PrintWriter out = resp.getWriter();
@@ -159,6 +163,17 @@ public class MembershipServlet extends HttpServlet {
 			out.write(mapper.writeValueAsString(Map.of("error", e.getMessage())));
 		}
 	}
+	private boolean isValidRole(String role) {
+		return Permission.RoleType.TEACHER.name().equals(role) || Permission.RoleType.STUDENT.name().equals(role);
+	}
+
+	private boolean hasPermission(String role, String action) {
+		Permission permission = datastore.find(Permission.class).filter(Filters.eq("action", action)).first();
+		if (permission != null) {
+			return permission.getAllowedRoles().contains(Permission.RoleType.valueOf(role));
+		}
+		return false;
+	}
 
 	private boolean isValidUUID(String userId) {
 		try {
@@ -168,5 +183,4 @@ public class MembershipServlet extends HttpServlet {
 			return false;
 		}
 	}
-
 }
